@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import "@radix-ui/themes/styles.css";
 
 :root {
   --background: #ffffff;
@@ -24,4 +25,12 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+}
+.CodeMirror {
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.CodeMirror-focused {
+  outline: none;
 }
