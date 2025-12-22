@@ -43,10 +43,7 @@ export async function PATCH(
 ) {
   const session = await getServerSession(authOptions);
   if (!session) {
-    return NextResponse.json(
-      { success: false, message: "Unauthorized" },
-      { status: 401 }
-    );
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
   const body = await req.json();
@@ -54,24 +51,28 @@ export async function PATCH(
 
   if (!parsed.success) {
     return NextResponse.json(
-      { success: false, errors: parsed.error.flatten().fieldErrors },
+      { errors: parsed.error.flatten().fieldErrors },
       { status: 400 }
     );
   }
 
-  try {
-    const updated = await prisma.note.update({
-      where: { id: params.noteid, userId: session.user.id },
-      data: parsed.data,
-    });
+  const note = await prisma.note.findFirst({
+    where: {
+      id: params.noteid,
+      userId: session.user.id,
+    },
+  });
 
-    return NextResponse.json({ success: true, data: updated });
-  } catch {
-    return NextResponse.json(
-      { success: false, message: "Not found" },
-      { status: 404 }
-    );
+  if (!note) {
+    return NextResponse.json({ message: "Not found" }, { status: 404 });
   }
+
+  const updated = await prisma.note.update({
+    where: { id: note.id },
+    data: parsed.data,
+  });
+
+  return NextResponse.json({ success: true, data: updated });
 }
 
 export async function DELETE(
@@ -80,22 +81,23 @@ export async function DELETE(
 ) {
   const session = await getServerSession(authOptions);
   if (!session) {
-    return NextResponse.json(
-      { success: false, message: "Unauthorized" },
-      { status: 401 }
-    );
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  try {
-    const deleted = await prisma.note.delete({
-      where: { id: params.noteid, userId: session.user.id },
-    });
+  const note = await prisma.note.findFirst({
+    where: {
+      id: params.noteid,
+      userId: session.user.id,
+    },
+  });
 
-    return NextResponse.json({ success: true, data: deleted });
-  } catch {
-    return NextResponse.json(
-      { success: false, message: "Not found" },
-      { status: 404 }
-    );
+  if (!note) {
+    return NextResponse.json({ message: "Not found" }, { status: 404 });
   }
+
+  const deleted = await prisma.note.delete({
+    where: { id: note.id },
+  });
+
+  return NextResponse.json({ success: true, data: deleted });
 }

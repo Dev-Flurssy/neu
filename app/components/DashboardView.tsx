@@ -15,7 +15,7 @@ function NoteCardSkeleton() {
 interface DashboardViewProps {
   notes: Note[];
   loading: boolean;
-  error: boolean;
+  error: string | null;
 }
 
 export function DashboardView({ notes, loading, error }: DashboardViewProps) {

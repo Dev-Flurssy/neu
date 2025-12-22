@@ -16,7 +16,7 @@ export function useNoteSubmit({ noteId, redirectTo }: SubmitOptions = {}) {
   const [error, setError] = React.useState("");
 
   async function submit(data: NotePayload) {
-    if (isSubmitting) return; // prevent double submit
+    if (isSubmitting) return;
     setIsSubmitting(true);
     setError("");
 
@@ -28,8 +28,16 @@ export function useNoteSubmit({ noteId, redirectTo }: SubmitOptions = {}) {
       });
 
       if (!res.ok) {
-        const { message } = await res.json().catch(() => ({ message: "" }));
-        setError(message || "Something went wrong. Please try again.");
+        const body = await res.json().catch(() => null);
+
+        if (body?.message) {
+          setError(body.message);
+        } else if (body?.errors) {
+          setError("Please check your input fields.");
+        } else {
+          setError("Something went wrong. Please try again.");
+        }
+
         return;
       }
 

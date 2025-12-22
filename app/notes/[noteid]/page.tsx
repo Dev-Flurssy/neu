@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useNote } from "@/app/hooks/useNote";
+import ReactMarkdown from "react-markdown";
 
 export default function NotePage({ params }: { params: { noteid: string } }) {
   const router = useRouter();
@@ -23,9 +24,14 @@ export default function NotePage({ params }: { params: { noteid: string } }) {
   if (!note) return <p>Note not found</p>;
 
   return (
-    <div className="max-w-lg mx-auto space-y-4">
+    <div className="max-w-lg mx-auto space-y-6">
       <h1 className="text-2xl font-bold">{note.title}</h1>
-      <p className="text-gray-700 whitespace-pre-line">{note.content}</p>
+
+      {/* MARKDOWN RENDER */}
+      <article className="prose max-w-none">
+        <ReactMarkdown>{note.content}</ReactMarkdown>
+      </article>
+
       <div className="flex gap-2">
         <button
           onClick={handleDelete}

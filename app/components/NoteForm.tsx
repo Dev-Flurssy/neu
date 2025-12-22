@@ -1,6 +1,10 @@
 "use client";
+
 import * as React from "react";
 import * as Form from "@radix-ui/react-form";
+import SimpleMDE from "react-simplemde-editor";
+import "easymde/dist/easymde.min.css";
+import { AiGenerateButton } from "./AiGenerateButton";
 
 interface NoteFormProps {
   onSubmit: (data: { title: string; content: string }) => void;
@@ -18,13 +22,15 @@ export function NoteForm({
   error,
   defaultValues,
 }: NoteFormProps) {
+  const [content, setContent] = React.useState(defaultValues?.content ?? "");
+
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     const form = e.currentTarget;
     const title = (form.elements.namedItem("title") as HTMLInputElement).value;
-    const content = (form.elements.namedItem("content") as HTMLTextAreaElement)
-      .value;
+
+    if (!content.trim()) return;
 
     onSubmit({ title, content });
   }
@@ -50,34 +56,34 @@ export function NoteForm({
             className="w-full border rounded-md p-2"
           />
         </Form.Control>
-        <Form.Message match="valueMissing" className="text-sm text-red-500">
-          Please enter a title
-        </Form.Message>
       </Form.Field>
 
       {/* CONTENT */}
-      <Form.Field name="content" className="space-y-2">
-        <Form.Label htmlFor="content" className="block text-sm font-medium">
-          Content
-        </Form.Label>
-        <Form.Control asChild>
-          <textarea
-            id="content"
-            name="content"
-            rows={5}
-            required
-            placeholder="Write your note here..."
-            defaultValue={defaultValues?.content}
-            className="w-full border rounded-md p-2"
-          />
-        </Form.Control>
-        <Form.Message match="valueMissing" className="text-sm text-red-500">
-          Please enter some content
-        </Form.Message>
-      </Form.Field>
+      <div className="space-y-2">
+        <label className="block text-sm font-medium">Content</label>
+
+        <SimpleMDE
+          value={content}
+          onChange={setContent}
+          options={{
+            autofocus: true,
+            spellChecker: false,
+            status: false,
+            placeholder: "Start writing...",
+          }}
+        />
+      </div>
+
+      {/* AI BUTTON BELOW EDITOR */}
+      <AiGenerateButton
+        onInsert={(markdown) =>
+          setContent((prev) => (prev ? `${prev}\n\n${markdown}` : markdown))
+        }
+      />
 
       {error && <p className="text-sm text-red-500">{error}</p>}
 
+      {/* SAVE */}
       <Form.Submit asChild>
         <button
           disabled={isSubmitting}
