@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useNote } from "@/app/hooks/useNote";
-import ReactMarkdown from "react-markdown";
+import { NoteViewSkeleton } from "@/app/components/NoteViewSkeleton";
+import TiptapViewer from "@/app/components/TiptapViewer";
 
 export default function NotePage({ params }: { params: { noteid: string } }) {
   const router = useRouter();
@@ -10,38 +11,32 @@ export default function NotePage({ params }: { params: { noteid: string } }) {
 
   async function handleDelete() {
     if (!confirm("Delete this note?")) return;
-    try {
-      await deleteNote();
-      router.push("/dashboard");
-      router.refresh();
-    } catch (err: any) {
-      alert(err.message || "Failed to delete note");
-    }
+    await deleteNote();
+    router.push("/dashboard");
+    router.refresh();
   }
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <NoteViewSkeleton />;
   if (error) return <p className="text-red-500">{error}</p>;
   if (!note) return <p>Note not found</p>;
 
   return (
-    <div className="max-w-lg mx-auto space-y-6">
+    <div className="mx-auto max-w-lg space-y-6">
       <h1 className="text-2xl font-bold">{note.title}</h1>
 
-      {/* MARKDOWN RENDER */}
-      <article className="prose max-w-none">
-        <ReactMarkdown>{note.content}</ReactMarkdown>
-      </article>
+      {/* ✅ Tiptap-native rendering */}
+      <TiptapViewer content={note.content} />
 
       <div className="flex gap-2">
         <button
           onClick={handleDelete}
-          className="bg-red-600 text-white px-4 py-2 rounded-md"
+          className="rounded-md bg-red-600 px-4 py-2 text-white"
         >
           Delete
         </button>
         <button
           onClick={() => router.push(`/notes/${note.id}/edit`)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md"
+          className="rounded-md bg-blue-600 px-4 py-2 text-white"
         >
           Edit
         </button>

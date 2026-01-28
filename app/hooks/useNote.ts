@@ -1,5 +1,7 @@
 "use client";
+
 import * as React from "react";
+import { notFound } from "next/navigation";
 
 interface Note {
   id: string;
@@ -14,6 +16,7 @@ export function useNote(noteId: string) {
 
   React.useEffect(() => {
     if (!noteId) return;
+
     let cancelled = false;
 
     async function fetchNote() {
@@ -21,18 +24,33 @@ export function useNote(noteId: string) {
         const res = await fetch(`/api/notes/${noteId}`, {
           credentials: "include",
         });
-        if (!res.ok) throw new Error("Note not found");
 
-        const { data } = await res.json(); // ✅ unwrap
-        if (!cancelled) setNote(data);
+        if (res.status === 404) {
+          notFound();
+        }
+
+        if (!res.ok) {
+          throw new Error("Failed to load note");
+        }
+
+        const { data } = await res.json();
+
+        if (!cancelled) {
+          setNote(data);
+        }
       } catch (err: any) {
-        if (!cancelled) setError(err.message || "Unable to load note");
+        if (!cancelled) {
+          setError(err.message || "Unable to load note");
+        }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
     fetchNote();
+
     return () => {
       cancelled = true;
     };
@@ -43,6 +61,7 @@ export function useNote(noteId: string) {
       method: "DELETE",
       credentials: "include",
     });
+
     if (!res.ok) {
       throw new Error("Failed to delete note");
     }

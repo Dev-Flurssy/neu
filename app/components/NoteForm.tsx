@@ -1,97 +1,89 @@
 "use client";
 
 import * as React from "react";
-import * as Form from "@radix-ui/react-form";
-import SimpleMDE from "react-simplemde-editor";
-import "easymde/dist/easymde.min.css";
-import { AiGenerateButton } from "./AiGenerateButton";
+import { marked } from "marked";
+
+import { AiPromptForm } from "./AiPromptForm";
+import RichTextEditor from "./RichTextEditor";
+import { ExportDropdown } from "./ExportDropdown";
 
 interface NoteFormProps {
+  initialTitle?: string;
+  initialContent?: string;
   onSubmit: (data: { title: string; content: string }) => void;
   isSubmitting?: boolean;
   error?: string;
-  defaultValues?: {
-    title?: string;
-    content?: string;
-  };
 }
 
 export function NoteForm({
+  initialTitle = "",
+  initialContent = "",
   onSubmit,
-  isSubmitting = false,
+  isSubmitting,
   error,
-  defaultValues,
 }: NoteFormProps) {
-  const [content, setContent] = React.useState(defaultValues?.content ?? "");
+  const [title, setTitle] = React.useState(initialTitle);
+  const [content, setContent] = React.useState(initialContent); // HTML
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleInsertFromAI(markdown: string) {
+    const html = marked.parse(markdown);
+    setContent(html);
+  }
+
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-
-    const form = e.currentTarget;
-    const title = (form.elements.namedItem("title") as HTMLInputElement).value;
-
-    if (!content.trim()) return;
-
     onSubmit({ title, content });
   }
 
   return (
-    <Form.Root
+    <form
       onSubmit={handleSubmit}
-      className="space-y-6 p-6 border rounded-xl bg-white shadow-sm"
+      className="space-y-6 mx-auto w-full max-w-3xl px-4"
     >
-      {/* TITLE */}
-      <Form.Field name="title" className="space-y-2">
-        <Form.Label htmlFor="title" className="block text-sm font-medium">
-          Title
-        </Form.Label>
-        <Form.Control asChild>
-          <input
-            id="title"
-            name="title"
-            type="text"
-            required
-            placeholder="Enter note title"
-            defaultValue={defaultValues?.title}
-            className="w-full border rounded-md p-2"
-          />
-        </Form.Control>
-      </Form.Field>
+      {/* AI Generator */}
+      <AiPromptForm onInsert={handleInsertFromAI} />
 
-      {/* CONTENT */}
+      {/* Title */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium">Content</label>
+        <label
+          htmlFor="note-title"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Title
+        </label>
 
-        <SimpleMDE
-          value={content}
-          onChange={setContent}
-          options={{
-            autofocus: true,
-            spellChecker: false,
-            status: false,
-            placeholder: "Start writing...",
-          }}
+        <input
+          id="note-title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Enter a clear, descriptive title"
+          className="w-full border rounded-md p-3 text-lg font-medium focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
-      {/* AI BUTTON BELOW EDITOR */}
-      <AiGenerateButton
-        onInsert={(markdown) =>
-          setContent((prev) => (prev ? `${prev}\n\n${markdown}` : markdown))
-        }
-      />
+      {/* Editor */}
+      <div id="note-preview" className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">
+          Content
+        </label>
 
+        <RichTextEditor value={content} onChange={setContent} />
+      </div>
+
+      {/* Error */}
       {error && <p className="text-sm text-red-500">{error}</p>}
 
-      {/* SAVE */}
-      <Form.Submit asChild>
+      {/* Actions */}
+      <div className="flex items-center justify-between">
+        <ExportDropdown title={title} content={content} />
+
         <button
           disabled={isSubmitting}
-          className="w-full bg-blue-600 text-white p-2 rounded-md disabled:opacity-50"
+          className="bg-blue-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50"
         >
-          {isSubmitting ? "Saving..." : "Save Note"}
+          {isSubmitting ? "Saving…" : "Save Note"}
         </button>
-      </Form.Submit>
-    </Form.Root>
+      </div>
+    </form>
   );
 }

@@ -20,7 +20,7 @@ export function useNotes() {
         const res = await fetch("/api/notes", { credentials: "include" });
         if (!res.ok) throw new Error("Failed to fetch notes");
 
-        const { data } = await res.json(); // ✅ unwrap
+        const { data } = await res.json();
         if (!cancelled) setNotes(data);
       } catch {
         if (!cancelled) setError("Unable to load notes");

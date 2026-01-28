@@ -5,6 +5,7 @@ import "./globals.css";
 import { Theme } from "@radix-ui/themes";
 import NavBar from "./components/NavBar";
 import Providers from "./provider";
+import Footer from "./components/Footer";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -19,12 +20,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
+        className={`${GeistSans.variable} ${GeistMono.variable} antialiased min-h-screen flex flex-col`}
       >
         <Providers>
           <Theme accentColor="plum" grayColor="gray">
             <NavBar />
-            <main>{children}</main>
+
+            <main className="flex-1">{children}</main>
+
+            <Footer />
           </Theme>
         </Providers>
       </body>

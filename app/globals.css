@@ -1,8 +1,10 @@
+@import "@radix-ui/themes/styles.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import "@radix-ui/themes/styles.css";
 
+/* Light & Dark Theme */
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -19,18 +21,147 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-size: 16px; /* Base size for mobile */
+  line-height: 1.6;
 }
 
+@media (min-width: 768px) {
+  body {
+    font-size: 18px; /* Larger, more readable on desktop */
+  }
+}
+
+/* Utility */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
 }
-.CodeMirror {
-  border-radius: 8px;
-  padding: 1.5rem;
+
+/* Tiptap Editor Styles */
+.ProseMirror {
+  outline: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+.ProseMirror ul {
+  list-style-type: disc;
+  margin-left: 1.5rem;
+  padding-left: 1.5rem;
 }
 
-.CodeMirror-focused {
-  outline: none;
+.ProseMirror ol {
+  list-style-type: decimal;
+  margin-left: 1.5rem;
+  padding-left: 1.5rem;
+}
+
+.ProseMirror li {
+  margin: 0.25rem 0;
+}
+
+@media (min-width: 768px) {
+  .ProseMirror {
+    font-size: 1.05rem; /* Slightly larger on desktop */
+  }
+}
+
+.ProseMirror p {
+  margin: 0.9rem 0;
+}
+
+.ProseMirror h1 {
+  font-size: 1.8rem;
+  margin: 2rem 0 1rem;
+  font-weight: 700;
+}
+
+.ProseMirror h2 {
+  font-size: 1.4rem;
+  margin: 1.6rem 0 1rem;
+  font-weight: 700;
+}
+
+.ProseMirror h3 {
+  font-size: 1.2rem;
+  margin: 1.2rem 0 0.8rem;
+  font-weight: 600;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.5rem;
+  margin: 1rem 0;
+}
+/* TipTap table styling */
+.ProseMirror table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.ProseMirror th,
+.ProseMirror td {
+  border: 1px solid #d1d5db;
+  padding: 8px;
+  text-align: left;
+}
+
+.ProseMirror th {
+  background-color: #f3f4f6;
+  font-weight: 600;
+}
+
+.ProseMirror tr:nth-child(even) td {
+  background-color: #fafafa;
+}
+
+/* PDF Page Styling */
+.pdf-page {
+  width: 100%;
+  max-width: 210mm;
+  min-height: 297mm;
+  background: white;
+  padding: 2rem 1.5rem;
+  margin: 0 auto;
+  border: 1px solid #e5e5e5;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  overflow-wrap: break-word;
+  font-size: 1rem;
+}
+
+@media (min-width: 768px) {
+  .pdf-page {
+    padding: 3rem 4rem; /* Spacious on desktop */
+    font-size: 1.05rem;
+  }
+}
+
+/* Page Break Rules */
+.pdf-page h1,
+.pdf-page h2,
+.pdf-page h3 {
+  page-break-before: always;
+}
+
+.pdf-page p,
+.pdf-page ul,
+.pdf-page ol {
+  page-break-inside: avoid;
+}
+
+/* Print Mode */
+@media print {
+  body {
+    background: none;
+  }
+
+  .pdf-page {
+    box-shadow: none;
+    border: none;
+    page-break-after: always;
+  }
 }

@@ -1,8 +1,11 @@
 "use client";
 
+import * as React from "react";
 import { NoteForm } from "@/app/components/NoteForm";
+import { NoteFormSkeleton } from "@/app/components/NoteFormSkeleton";
 import { useNoteSubmit } from "@/app/hooks/useNoteSubmit";
 import { useNote } from "@/app/hooks/useNote";
+import { PdfEditor } from "@/app/components/PdfEditor";
 
 export default function EditNotePage({
   params,
@@ -14,24 +17,25 @@ export default function EditNotePage({
     redirectTo: `/notes/${params.noteid}`,
   });
 
-  const { note, loading, error: noteError } = useNote(params.noteid);
+  const { note, loading } = useNote(params.noteid);
 
-  if (loading) return <p>Loading...</p>;
-  if (noteError) return <p>{noteError}</p>;
-  if (!note) return <p>Note not found</p>;
+  if (loading || !note) return <NoteFormSkeleton />;
 
   return (
-    <div className="max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Edit Note</h1>
-      <NoteForm
-        onSubmit={submit}
-        isSubmitting={isSubmitting}
-        error={error}
-        defaultValues={{
-          title: note.title,
-          content: note.content,
-        }}
-      />
-    </div>
+    <>
+      <div className="mx-auto max-w-[210mm] flex justify-between items-center py-4">
+        <h1 className="text-xl font-semibold">Edit Note</h1>
+      </div>
+
+      <PdfEditor>
+        <NoteForm
+          initialTitle={note.title}
+          initialContent={note.content}
+          onSubmit={(data) => submit(data)}
+          isSubmitting={isSubmitting}
+          error={error}
+        />
+      </PdfEditor>
+    </>
   );
 }

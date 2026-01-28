@@ -1,16 +1,15 @@
 "use client";
 
-import React from "react";
+import { NoteCardSkeleton } from "@/app/components/NoteCardSkeleton";
 
 export default function DashboardSkeleton() {
   return (
-    <div className="max-w-4xl mx-auto mt-10 space-y-4">
-      {[...Array(5)].map((_, i) => (
-        <div
-          key={i}
-          className="animate-pulse bg-gray-200 h-24 rounded-lg"
-        ></div>
-      ))}
+    <div className="min-h-[70vh] w-full max-w-3xl mx-auto px-4 sm:px-6 py-8">
+      <div className="flex flex-col gap-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <NoteCardSkeleton key={i} />
+        ))}
+      </div>
     </div>
   );
 }

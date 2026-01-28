@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { POST } from "@/app/api/ai/generate/route";
 
 export function useAiGenerate() {
   const [loading, setLoading] = React.useState(false);
@@ -19,12 +18,14 @@ export function useAiGenerate() {
       });
 
       const body = await res.json();
+
       if (!res.ok) {
-        throw new Error(body.message || "Generation Failed");
+        throw new Error(body.message || "Generation failed");
       }
-      return body.data as string;
+
+      return body.text as string;
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Failed to generate content");
       throw err;
     } finally {
       setLoading(false);
