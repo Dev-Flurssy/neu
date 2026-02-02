@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useNote } from "@/app/hooks/useNote";
 import { NoteViewSkeleton } from "@/app/components/NoteViewSkeleton";
-import TiptapViewer from "@/app/components/TiptapViewer";
+import PdfPreview from "@/app/components/PdfPreview";
+import { ExportDropdown } from "@/app/components/ExportDropdown";
 
 export default function NotePage({ params }: { params: { noteid: string } }) {
   const router = useRouter();
@@ -21,19 +22,21 @@ export default function NotePage({ params }: { params: { noteid: string } }) {
   if (!note) return <p>Note not found</p>;
 
   return (
-    <div className="mx-auto max-w-lg space-y-6">
-      <h1 className="text-2xl font-bold">{note.title}</h1>
+    <div className="mx-auto max-w-4xl space-y-6">
+      <h1 className="text-3xl font-bold">{note.title}</h1>
 
-      {/* ✅ Tiptap-native rendering */}
-      <TiptapViewer content={note.content} />
+      <PdfPreview html={note.content} />
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-center">
+        <ExportDropdown title={note.title} content={note.content} />
+
         <button
           onClick={handleDelete}
           className="rounded-md bg-red-600 px-4 py-2 text-white"
         >
           Delete
         </button>
+
         <button
           onClick={() => router.push(`/notes/${note.id}/edit`)}
           className="rounded-md bg-blue-600 px-4 py-2 text-white"

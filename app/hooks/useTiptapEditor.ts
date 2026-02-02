@@ -17,24 +17,32 @@ import { useEffect } from "react";
 export function useTiptapEditor(
   value: string,
   onChange: (html: string) => void,
+  editable: boolean = true,
 ) {
   const editor = useEditor({
     immediatelyRender: false,
+    editable,
     extensions: [
-      StarterKit.configure({ heading: false }),
+      StarterKit.configure({
+        heading: false,
+        link: false,
+      }),
       Heading.configure({ levels: [1, 2, 3] }),
       Image.configure({ allowBase64: true }),
       Placeholder.configure({ placeholder: "Start writing your note..." }),
       Link.configure({ autolink: true }),
 
-      // Table extensions
       Table.configure({ resizable: true }),
       TableRow,
       TableHeader,
       TableCell,
     ],
     content: value,
-    onUpdate: ({ editor }) => onChange(editor.getHTML()),
+    onUpdate: ({ editor }) => {
+      if (editable) {
+        onChange(editor.getHTML());
+      }
+    },
   });
 
   useEffect(() => {

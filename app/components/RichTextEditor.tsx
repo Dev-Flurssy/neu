@@ -7,9 +7,10 @@ import { useTiptapEditor } from "../hooks/useTiptapEditor";
 interface Props {
   value: string;
   onChange: (html: string) => void;
+  editable?: boolean;
 }
 
-export default function RichTextEditor({ value, onChange }: Props) {
+export default function RichTextEditor({ value, onChange, editable }: Props) {
   const editor = useTiptapEditor(value, onChange);
   const fileInputRef = useRef<HTMLInputElement>(null);
 

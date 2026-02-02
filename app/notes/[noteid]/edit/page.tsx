@@ -19,6 +19,9 @@ export default function EditNotePage({
 
   const { note, loading } = useNote(params.noteid);
 
+  // Track live content for preview
+  const [content, setContent] = React.useState("");
+
   if (loading || !note) return <NoteFormSkeleton />;
 
   return (
@@ -34,6 +37,7 @@ export default function EditNotePage({
           onSubmit={(data) => submit(data)}
           isSubmitting={isSubmitting}
           error={error}
+          onContentChange={setContent}
         />
       </PdfEditor>
     </>

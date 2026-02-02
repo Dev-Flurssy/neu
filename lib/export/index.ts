@@ -1,6 +1,6 @@
-import { exportPDF } from "./pdf";
-import { exportDOCX } from "./docx";
-import { exportPPTX } from "./pptx";
+import { exportPDF } from "./client/pdf";
+import { exportDOCX } from "./client/docx";
+import { exportPPTX } from "./client/pptx";
 
 export type ExportFormat = "pdf" | "docx" | "pptx";
 

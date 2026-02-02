@@ -1,10 +1,12 @@
 @import "@radix-ui/themes/styles.css";
+@import "@/app/styles/document.css";
+@import "@/app/styles/preview.css";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Light & Dark Theme */
+/* Global Theme Variables */
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -22,24 +24,27 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
-  font-size: 16px; /* Base size for mobile */
+  font-size: 16px;
   line-height: 1.6;
 }
 
 @media (min-width: 768px) {
   body {
-    font-size: 18px; /* Larger, more readable on desktop */
+    font-size: 18px;
   }
 }
 
-/* Utility */
+/* Utility Classes */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
 }
 
-/* Tiptap Editor Styles */
+/* ----------------------------- */
+/* Tiptap Editor Styles          */
+/* ----------------------------- */
+
 .ProseMirror {
   outline: none;
   white-space: pre-wrap;
@@ -47,25 +52,10 @@ body {
   font-size: 1rem;
   line-height: 1.7;
 }
-.ProseMirror ul {
-  list-style-type: disc;
-  margin-left: 1.5rem;
-  padding-left: 1.5rem;
-}
-
-.ProseMirror ol {
-  list-style-type: decimal;
-  margin-left: 1.5rem;
-  padding-left: 1.5rem;
-}
-
-.ProseMirror li {
-  margin: 0.25rem 0;
-}
 
 @media (min-width: 768px) {
   .ProseMirror {
-    font-size: 1.05rem; /* Slightly larger on desktop */
+    font-size: 1.05rem;
   }
 }
 
@@ -96,7 +86,11 @@ body {
   padding-left: 1.5rem;
   margin: 1rem 0;
 }
-/* TipTap table styling */
+
+.ProseMirror li {
+  margin: 0.25rem 0;
+}
+
 .ProseMirror table {
   width: 100%;
   border-collapse: collapse;
@@ -117,51 +111,4 @@ body {
 
 .ProseMirror tr:nth-child(even) td {
   background-color: #fafafa;
-}
-
-/* PDF Page Styling */
-.pdf-page {
-  width: 100%;
-  max-width: 210mm;
-  min-height: 297mm;
-  background: white;
-  padding: 2rem 1.5rem;
-  margin: 0 auto;
-  border: 1px solid #e5e5e5;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  overflow-wrap: break-word;
-  font-size: 1rem;
-}
-
-@media (min-width: 768px) {
-  .pdf-page {
-    padding: 3rem 4rem; /* Spacious on desktop */
-    font-size: 1.05rem;
-  }
-}
-
-/* Page Break Rules */
-.pdf-page h1,
-.pdf-page h2,
-.pdf-page h3 {
-  page-break-before: always;
-}
-
-.pdf-page p,
-.pdf-page ul,
-.pdf-page ol {
-  page-break-inside: avoid;
-}
-
-/* Print Mode */
-@media print {
-  body {
-    background: none;
-  }
-
-  .pdf-page {
-    box-shadow: none;
-    border: none;
-    page-break-after: always;
-  }
 }

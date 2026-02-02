@@ -4,3 +4,5 @@ declare module "easymde/dist/easymde.min.css";
 declare module "file-saver";
 declare module "react-loading-skeleton/dist/skeleton.css";
 declare module "html-to-docx";
+declare module "document";
+declare module "preview";
