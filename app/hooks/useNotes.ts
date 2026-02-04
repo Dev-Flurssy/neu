@@ -1,4 +1,5 @@
 "use client";
+
 import * as React from "react";
 
 interface Note {
@@ -13,25 +14,34 @@ export function useNotes() {
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
+    const controller = new AbortController();
     let cancelled = false;
 
     async function fetchNotes() {
       try {
-        const res = await fetch("/api/notes", { credentials: "include" });
+        const res = await fetch("/api/notes", {
+          credentials: "include",
+          signal: controller.signal,
+        });
+
         if (!res.ok) throw new Error("Failed to fetch notes");
 
         const { data } = await res.json();
         if (!cancelled) setNotes(data);
-      } catch {
-        if (!cancelled) setError("Unable to load notes");
+      } catch (err: any) {
+        if (!cancelled && err.name !== "AbortError") {
+          setError("Unable to load notes");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
 
     fetchNotes();
+
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, []);
 

@@ -2,9 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useNote } from "@/app/hooks/useNote";
-import { NoteViewSkeleton } from "@/app/components/NoteViewSkeleton";
-import PdfPreview from "@/app/components/PdfPreview";
-import { ExportDropdown } from "@/app/components/ExportDropdown";
+import { NoteViewSkeleton } from "@/app/components/skeleton/NoteViewSkeleton";
+import PdfPreview from "@/app/components/editor/PdfPreview";
+import { ExportDropdown } from "@/app/components/editor/ExportDropdown";
 
 export default function NotePage({ params }: { params: { noteid: string } }) {
   const router = useRouter();

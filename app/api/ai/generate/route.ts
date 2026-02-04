@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     if (!prompt) {
       return NextResponse.json(
         { error: "Prompt is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -27,8 +27,8 @@ export async function POST(req: Request) {
         },
         { role: "user", content: prompt },
       ],
-      temperature: 0.7,
-      max_tokens: 1200,
+      temperature: 0.4,
+      max_tokens: 4000,
     });
 
     return NextResponse.json({
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     console.error("Groq error:", error);
     return NextResponse.json(
       { error: "AI generation failed" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

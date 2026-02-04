@@ -6,7 +6,7 @@ export default function HomePage() {
   return (
     <main className="bg-gray-50">
       {/* HERO SECTION */}
-      <section className="max-w-6xl mx-auto px-6 py-20 md:py-28 text-center">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight mb-6">
           Building a Smart <span className="text-blue-600">Note Generator</span>{" "}
           for NEU
@@ -28,7 +28,7 @@ export default function HomePage() {
       </section>
 
       {/* PROJECT SUMMARY */}
-      <section className="max-w-6xl mx-auto px-6 py-16">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-14">
         <h2 className="text-2xl md:text-3xl font-semibold mb-4 text-center">
           Project Summary
         </h2>
@@ -40,12 +40,12 @@ export default function HomePage() {
       </section>
 
       {/* PHASES */}
-      <section className="max-w-6xl mx-auto px-6 py-20">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
         <h2 className="text-2xl md:text-3xl font-semibold mb-12 text-center">
           Note Generation Phases
         </h2>
 
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
           <PhaseCard
             title="Sign Up"
             description="Create an account using Email or Gmail to get started."
@@ -82,14 +82,14 @@ function PhaseCard({
   role: string;
 }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition max-w-sm mx-auto">
+    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition w-full">
       <div className="flex items-center gap-4 mb-4">
         <Image
           src={avatar}
           alt={title}
-          width={56}
-          height={56}
-          className="rounded-full object-cover"
+          width={120}
+          height={120}
+          className="rounded-xl object-cover shadow-sm"
         />
         <div>
           <div className="font-semibold text-lg">{title}</div>

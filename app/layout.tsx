@@ -3,9 +3,9 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import { Theme } from "@radix-ui/themes";
-import NavBar from "./components/NavBar";
+import NavBar from "./components/nav-foot/NavBar";
 import Providers from "./provider";
-import Footer from "./components/Footer";
+import Footer from "./components/nav-foot/Footer";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -14,19 +14,19 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
       <body
-        className={`${GeistSans.variable} ${GeistMono.variable} antialiased min-h-screen flex flex-col`}
+        className={`${GeistSans.variable} ${GeistMono.variable} antialiased min-h-screen flex flex-col bg-gray-50`}
       >
         <Providers>
           <Theme accentColor="plum" grayColor="gray">
             <NavBar />
 
-            <main className="flex-1">{children}</main>
+            <main className="flex-1 pb-24 pt-10">{children}</main>
 
             <Footer />
           </Theme>

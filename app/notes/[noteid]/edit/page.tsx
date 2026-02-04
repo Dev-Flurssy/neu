@@ -1,11 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { NoteForm } from "@/app/components/NoteForm";
-import { NoteFormSkeleton } from "@/app/components/NoteFormSkeleton";
+import { NoteForm } from "@/app/components/notes/NoteForm";
+import { NoteFormSkeleton } from "@/app/components/skeleton/NoteFormSkeleton";
 import { useNoteSubmit } from "@/app/hooks/useNoteSubmit";
 import { useNote } from "@/app/hooks/useNote";
-import { PdfEditor } from "@/app/components/PdfEditor";
 
 export default function EditNotePage({
   params,
@@ -19,27 +18,19 @@ export default function EditNotePage({
 
   const { note, loading } = useNote(params.noteid);
 
-  // Track live content for preview
-  const [content, setContent] = React.useState("");
-
   if (loading || !note) return <NoteFormSkeleton />;
 
   return (
-    <>
-      <div className="mx-auto max-w-[210mm] flex justify-between items-center py-4">
-        <h1 className="text-xl font-semibold">Edit Note</h1>
-      </div>
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
+      <h1 className="text-xl sm:text-2xl font-bold">Edit Note</h1>
 
-      <PdfEditor>
-        <NoteForm
-          initialTitle={note.title}
-          initialContent={note.content}
-          onSubmit={(data) => submit(data)}
-          isSubmitting={isSubmitting}
-          error={error}
-          onContentChange={setContent}
-        />
-      </PdfEditor>
-    </>
+      <NoteForm
+        initialTitle={note.title}
+        initialContent={note.content}
+        onSubmit={submit}
+        isSubmitting={isSubmitting}
+        error={error}
+      />
+    </div>
   );
 }

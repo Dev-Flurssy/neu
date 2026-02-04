@@ -2,7 +2,7 @@
 
 import React from "react";
 
-export default function LoginError({
+export default function SignupError({
   error,
   reset,
 }: {
@@ -22,15 +22,7 @@ export default function LoginError({
 
         <button
           onClick={reset}
-          className="
-            w-full bg-blue-600 text-white 
-            py-3 sm:py-3.5 
-            rounded-lg 
-            hover:bg-blue-700 
-            transition 
-            font-medium 
-            text-sm sm:text-base
-          "
+          className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium text-sm sm:text-base"
         >
           Try Again
         </button>

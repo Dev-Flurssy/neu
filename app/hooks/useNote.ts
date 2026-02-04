@@ -17,35 +17,27 @@ export function useNote(noteId: string) {
   React.useEffect(() => {
     if (!noteId) return;
 
+    const controller = new AbortController();
     let cancelled = false;
 
     async function fetchNote() {
       try {
         const res = await fetch(`/api/notes/${noteId}`, {
           credentials: "include",
+          signal: controller.signal,
         });
 
-        if (res.status === 404) {
-          notFound();
-        }
-
-        if (!res.ok) {
-          throw new Error("Failed to load note");
-        }
+        if (res.status === 404) notFound();
+        if (!res.ok) throw new Error("Failed to load note");
 
         const { data } = await res.json();
-
-        if (!cancelled) {
-          setNote(data);
-        }
+        if (!cancelled) setNote(data);
       } catch (err: any) {
-        if (!cancelled) {
+        if (!cancelled && err.name !== "AbortError") {
           setError(err.message || "Unable to load note");
         }
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -53,6 +45,7 @@ export function useNote(noteId: string) {
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [noteId]);
 
@@ -62,9 +55,7 @@ export function useNote(noteId: string) {
       credentials: "include",
     });
 
-    if (!res.ok) {
-      throw new Error("Failed to delete note");
-    }
+    if (!res.ok) throw new Error("Failed to delete note");
   }
 
   return { note, loading, error, deleteNote };

@@ -1,5 +1,3 @@
-import fs from "fs";
-import path from "path";
 import {
   Document,
   Packer,
@@ -10,16 +8,37 @@ import {
   TableRow,
   TableCell,
   ImageRun,
+  WidthType,
+  BorderStyle,
 } from "docx";
+import type { PaginationResult, LayoutBlock } from "@/lib/pagination/types";
 
-export async function buildDocx(title: string, contentHtml: string) {
-  const children = convertHtmlToDocx(contentHtml);
+/* -------------------------------------------------------
+   MAIN DOCX BUILDER
+------------------------------------------------------- */
+
+export async function buildDocxFromPagination(pagination: PaginationResult) {
+  const sections = [];
+
+  for (const page of pagination.pages) {
+    const children: (Paragraph | Table)[] = [];
+
+    for (const block of page.blocks) {
+      const converted = await convertBlockToDocx(block);
+      children.push(...converted);
+    }
+
+    sections.push({
+      properties: {},
+      children,
+    });
+  }
 
   const doc = new Document({
     numbering: {
       config: [
         {
-          reference: "ordered-list",
+          reference: "numbering",
           levels: [
             {
               level: 0,
@@ -31,210 +50,208 @@ export async function buildDocx(title: string, contentHtml: string) {
         },
       ],
     },
-    sections: [
-      {
-        children: [
-          new Paragraph({
-            text: title,
-            heading: HeadingLevel.TITLE,
-          }),
-          ...children,
-        ],
-      },
-    ],
+    sections,
   });
 
-  return await Packer.toBuffer(doc);
+  return await Packer.toBlob(doc);
 }
 
-function convertHtmlToDocx(html: string): (Paragraph | Table)[] {
-  const elements: (Paragraph | Table)[] = [];
+/* -------------------------------------------------------
+   BLOCK → DOCX CONVERSION
+------------------------------------------------------- */
 
-  const blocks = html.replace(/>\s+</g, "><").split(/(?=<)/g);
+async function convertBlockToDocx(
+  block: LayoutBlock,
+): Promise<(Paragraph | Table)[]> {
+  const el = htmlToElement(block.html);
+  const tag = el.tagName.toLowerCase();
 
-  for (const block of blocks) {
-    const trimmed = block.trim();
-    if (!trimmed) continue;
+  // Headings
+  if (tag === "h1" || tag === "h2" || tag === "h3") {
+    const level =
+      tag === "h1"
+        ? HeadingLevel.HEADING_1
+        : tag === "h2"
+          ? HeadingLevel.HEADING_2
+          : HeadingLevel.HEADING_3;
 
-    // H1
-    if (trimmed.startsWith("<h1")) {
-      elements.push(
-        new Paragraph({
-          children: parseInlineFormatting(trimmed),
-          heading: HeadingLevel.HEADING_1,
-        }),
-      );
-      continue;
-    }
-
-    // H2
-    if (trimmed.startsWith("<h2")) {
-      elements.push(
-        new Paragraph({
-          children: parseInlineFormatting(trimmed),
-          heading: HeadingLevel.HEADING_2,
-        }),
-      );
-      continue;
-    }
-
-    // Paragraph
-    if (trimmed.startsWith("<p")) {
-      elements.push(
-        new Paragraph({
-          children: parseInlineFormatting(trimmed),
-        }),
-      );
-      continue;
-    }
-
-    // Image
-    if (trimmed.startsWith("<img")) {
-      const src = extractImageSrc(trimmed);
-      if (!src || src.startsWith("http")) continue;
-
-      const { buffer, type } = loadImageBuffer(src);
-
-      elements.push(
-        new Paragraph({
-          children: [
-            new ImageRun({
-              data: buffer,
-              type,
-              transformation: { width: 500, height: 300 },
-            }),
-          ],
-        }),
-      );
-      continue;
-    }
-
-    // Table
-    if (trimmed.startsWith("<table")) {
-      const table = buildTableFromHtml(trimmed);
-      if (table) elements.push(table);
-      continue;
-    }
-
-    // Unordered list
-    if (trimmed.startsWith("<ul")) {
-      elements.push(...buildListFromHtml(trimmed, false));
-      continue;
-    }
-
-    // Ordered list
-    if (trimmed.startsWith("<ol")) {
-      elements.push(...buildListFromHtml(trimmed, true));
-      continue;
-    }
-  }
-
-  return elements;
-}
-function parseInlineFormatting(html: string): TextRun[] {
-  const runs: TextRun[] = [];
-
-  const cleaned = html.replace(/^<[^>]+>|<\/[^>]+>$/g, "");
-  const parts = cleaned.split(/(<\/?[^>]+>)/g);
-
-  let bold = false;
-  let italic = false;
-  let underline = false;
-
-  for (const part of parts) {
-    switch (part) {
-      case "<strong>":
-        bold = true;
-        continue;
-      case "</strong>":
-        bold = false;
-        continue;
-      case "<em>":
-        italic = true;
-        continue;
-      case "</em>":
-        italic = false;
-        continue;
-      case "<u>":
-        underline = true;
-        continue;
-      case "</u>":
-        underline = false;
-        continue;
-    }
-
-    if (!part.startsWith("<")) {
-      runs.push(
-        new TextRun({
-          text: part,
-          bold,
-          italics: italic,
-          underline: underline ? { type: "single" } : undefined,
-        }),
-      );
-    }
-  }
-
-  return runs;
-}
-function buildListFromHtml(html: string, ordered: boolean): Paragraph[] {
-  const items: Paragraph[] = [];
-  const liRegex = /<li>(.*?)<\/li>/g;
-
-  let match;
-  while ((match = liRegex.exec(html)) !== null) {
-    items.push(
+    return [
       new Paragraph({
-        children: parseInlineFormatting(match[1]),
-        ...(ordered
-          ? { numbering: { reference: "ordered-list", level: 0 } }
-          : { bullet: { level: 0 } }),
+        children: parseInlineFormatting(el),
+        heading: level,
       }),
+    ];
+  }
+
+  // Paragraphs
+  if (tag === "p") {
+    return [
+      new Paragraph({
+        children: parseInlineFormatting(el),
+      }),
+    ];
+  }
+
+  // Unordered list
+  if (tag === "ul") {
+    return Array.from(el.children).map(
+      (li) =>
+        new Paragraph({
+          children: parseInlineFormatting(li as HTMLElement),
+          bullet: { level: 0 },
+        }),
     );
   }
 
-  return items;
+  // Ordered list
+  if (tag === "ol") {
+    return Array.from(el.children).map(
+      (li) =>
+        new Paragraph({
+          children: parseInlineFormatting(li as HTMLElement),
+          numbering: { reference: "numbering", level: 0 },
+        }),
+    );
+  }
+
+  // Images → must be wrapped in a Paragraph
+  if (tag === "img") {
+    const imageRun = await convertImage(el as HTMLImageElement);
+    return [new Paragraph({ children: [imageRun] })];
+  }
+
+  // Tables
+  if (tag === "table") {
+    return [convertTable(el as HTMLTableElement)];
+  }
+
+  // Fallback
+  return [
+    new Paragraph({
+      children: parseInlineFormatting(el),
+    }),
+  ];
 }
 
-function buildTableFromHtml(html: string): Table | null {
-  const rows: TableRow[] = [];
-  const rowRegex = /<tr>(.*?)<\/tr>/g;
+/* -------------------------------------------------------
+   INLINE FORMATTING (bold, italic, underline)
+------------------------------------------------------- */
 
-  let rowMatch;
-  while ((rowMatch = rowRegex.exec(html)) !== null) {
-    const cells: TableCell[] = [];
-    const cellRegex = /<t[dh]>(.*?)<\/t[dh]>/g;
+function parseInlineFormatting(
+  el: HTMLElement,
+  inherited: { bold?: boolean; italics?: boolean; underline?: boolean } = {},
+): TextRun[] {
+  const runs: TextRun[] = [];
 
-    let cellMatch;
-    while ((cellMatch = cellRegex.exec(rowMatch[1])) !== null) {
-      cells.push(
+  el.childNodes.forEach((node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent || "";
+      if (text.trim()) {
+        runs.push(
+          new TextRun({
+            text,
+            bold: inherited.bold,
+            italics: inherited.italics,
+            underline: inherited.underline ? {} : undefined,
+          }),
+        );
+      }
+      return;
+    }
+
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const child = node as HTMLElement;
+
+      const next = {
+        bold:
+          inherited.bold || child.tagName === "STRONG" || child.tagName === "B",
+        italics:
+          inherited.italics || child.tagName === "EM" || child.tagName === "I",
+        underline: inherited.underline || child.tagName === "U",
+      };
+
+      runs.push(...parseInlineFormatting(child, next));
+    }
+  });
+
+  return runs;
+}
+
+/* -------------------------------------------------------
+   IMAGES
+------------------------------------------------------- */
+
+async function convertImage(el: HTMLImageElement): Promise<ImageRun> {
+  const src = el.getAttribute("src")!;
+  const res = await fetch(src);
+  const buffer = await res.arrayBuffer();
+
+  const type = src.endsWith(".png") ? "png" : "jpg";
+
+  return new ImageRun({
+    data: buffer,
+    transformation: {
+      width: el.width || 400,
+      height: el.height || 300,
+    },
+    type,
+  });
+}
+
+/* -------------------------------------------------------
+   TABLES WITH BORDERS
+------------------------------------------------------- */
+
+function convertTable(el: HTMLTableElement): Table {
+  const rows = Array.from(el.querySelectorAll("tr")).map((tr) => {
+    const cells = Array.from(tr.children).map(
+      (td) =>
         new TableCell({
           children: [
             new Paragraph({
-              children: parseInlineFormatting(cellMatch[1]),
+              children: parseInlineFormatting(td as HTMLElement),
             }),
           ],
+          borders: {
+            top: {
+              style: BorderStyle.SINGLE,
+              size: 1,
+              color: "000000",
+            },
+            bottom: {
+              style: BorderStyle.SINGLE,
+              size: 1,
+              color: "000000",
+            },
+            left: {
+              style: BorderStyle.SINGLE,
+              size: 1,
+              color: "000000",
+            },
+            right: {
+              style: BorderStyle.SINGLE,
+              size: 1,
+              color: "000000",
+            },
+          },
         }),
-      );
-    }
+    );
 
-    rows.push(new TableRow({ children: cells }));
-  }
+    return new TableRow({ children: cells });
+  });
 
-  return rows.length ? new Table({ rows }) : null;
-}
-function extractImageSrc(html: string) {
-  const match = html.match(/src="([^"]+)"/);
-  return match ? match[1] : null;
+  return new Table({
+    rows,
+    width: { size: 100, type: WidthType.PERCENTAGE },
+  });
 }
 
-function loadImageBuffer(src: string): { buffer: Buffer; type: "png" | "jpg" } {
-  const cleanPath = src.replace(/^\//, "");
-  const fullPath = path.join(process.cwd(), "public", cleanPath);
-  const buffer = fs.readFileSync(fullPath);
+/* -------------------------------------------------------
+   HTML → DOM ELEMENT
+------------------------------------------------------- */
 
-  const ext = cleanPath.split(".").pop()?.toLowerCase();
-  const type: "png" | "jpg" = ext === "png" ? "png" : "jpg";
-
-  return { buffer, type };
+function htmlToElement(html: string): HTMLElement {
+  const div = document.createElement("div");
+  div.innerHTML = html.trim();
+  return div.firstElementChild as HTMLElement;
 }

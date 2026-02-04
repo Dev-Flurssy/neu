@@ -12,13 +12,12 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
 
-  callbacks: {
-    async session({ session, token }) {
-      if (session.user && token.sub) {
-        session.user.id = token.sub;
-      }
-      return session;
-    },
+  jwt: {
+    maxAge: 60 * 60 * 24 * 30, // 30 days
+  },
+
+  pages: {
+    signIn: "/login",
   },
 
   providers: [
@@ -32,14 +31,30 @@ export const authOptions: NextAuthOptions = {
     }),
 
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      allowDangerousEmailAccountLinking: false,
     }),
   ],
 
-  pages: {
-    signIn: "/login",
+  callbacks: {
+    async jwt({ token, user }) {
+      // Attach user ID on first login
+      if (user) {
+        token.sub = user.id;
+      }
+      return token;
+    },
+
+    async session({ session, token }) {
+      if (session.user && token.sub) {
+        session.user.id = token.sub;
+      }
+      return session;
+    },
   },
+
+  secret: process.env.NEXTAUTH_SECRET,
 };
 
 const handler = NextAuth(authOptions);

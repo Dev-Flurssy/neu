@@ -1,9 +1,8 @@
-// lib/export/client/docx.ts
-export async function exportDOCX(title: string, contentHtml: string) {
+export async function exportDOCX(title: string, html: string) {
   const res = await fetch("/api/export/docx", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title, content: contentHtml }),
+    body: JSON.stringify({ html }),
   });
 
   const blob = await res.blob();

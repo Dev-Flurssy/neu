@@ -6,98 +6,91 @@ import { noteUpdateSchema } from "@/lib/note";
 
 export async function GET(
   _: Request,
-  { params }: { params: { noteid: string } }
+  { params }: { params: { noteid: string } },
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json(
-      { success: false, message: "Unauthorized" },
-      { status: 401 }
-    );
-  }
-
   try {
-    const note = await prisma.note.findFirst({
-      where: { id: params.noteid, userId: session.user.id },
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const note = await prisma.note.findUnique({
+      where: { id: params.noteid },
     });
 
-    if (!note) {
-      return NextResponse.json(
-        { success: false, message: "Not found" },
-        { status: 404 }
-      );
+    if (!note || note.userId !== session.user.id) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
     return NextResponse.json({ success: true, data: note });
-  } catch (error) {
-    return NextResponse.json(
-      { success: false, message: "Server error" },
-      { status: 500 }
-    );
+  } catch (err) {
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { noteid: string } }
+  { params }: { params: { noteid: string } },
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const parsed = noteUpdateSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { errors: parsed.error.flatten().fieldErrors },
+        { status: 400 },
+      );
+    }
+
+    const note = await prisma.note.findUnique({
+      where: { id: params.noteid },
+    });
+
+    if (!note || note.userId !== session.user.id) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    const updated = await prisma.note.update({
+      where: { id: note.id },
+      data: parsed.data,
+    });
+
+    return NextResponse.json({ success: true, data: updated });
+  } catch (err) {
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
-
-  const body = await req.json();
-  const parsed = noteUpdateSchema.safeParse(body);
-
-  if (!parsed.success) {
-    return NextResponse.json(
-      { errors: parsed.error.flatten().fieldErrors },
-      { status: 400 }
-    );
-  }
-
-  const note = await prisma.note.findFirst({
-    where: {
-      id: params.noteid,
-      userId: session.user.id,
-    },
-  });
-
-  if (!note) {
-    return NextResponse.json({ message: "Not found" }, { status: 404 });
-  }
-
-  const updated = await prisma.note.update({
-    where: { id: note.id },
-    data: parsed.data,
-  });
-
-  return NextResponse.json({ success: true, data: updated });
 }
 
 export async function DELETE(
   _: Request,
-  { params }: { params: { noteid: string } }
+  { params }: { params: { noteid: string } },
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const note = await prisma.note.findUnique({
+      where: { id: params.noteid },
+    });
+
+    if (!note || note.userId !== session.user.id) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    await prisma.note.delete({
+      where: { id: note.id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
-
-  const note = await prisma.note.findFirst({
-    where: {
-      id: params.noteid,
-      userId: session.user.id,
-    },
-  });
-
-  if (!note) {
-    return NextResponse.json({ message: "Not found" }, { status: 404 });
-  }
-
-  const deleted = await prisma.note.delete({
-    where: { id: note.id },
-  });
-
-  return NextResponse.json({ success: true, data: deleted });
 }

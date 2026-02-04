@@ -1,8 +1,7 @@
 import fs from "fs";
 
 export function buildExportHtml(title: string, contentHtml: string) {
-  const documentCss = fs.readFileSync("app/styles/document.css", "utf8");
-  const previewCss = fs.readFileSync("app/styles/preview.css", "utf8");
+  const baseCss = fs.readFileSync("public/document-base.css", "utf8");
 
   return `
 <!DOCTYPE html>
@@ -11,8 +10,7 @@ export function buildExportHtml(title: string, contentHtml: string) {
     <meta charset="utf-8" />
     <title>${title}</title>
 
-    <style>${documentCss}</style>
-    <style>${previewCss}</style>
+    <style>${baseCss}</style>
   </head>
 
   <body>

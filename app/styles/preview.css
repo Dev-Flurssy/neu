@@ -10,7 +10,7 @@
 
 .page {
   width: 794px;
-  height: 1123px; /* ← must be fixed */
+  height: 1123px;
   background: white;
   padding: 40px;
   box-sizing: border-box;
@@ -18,6 +18,7 @@
   border-radius: 4px;
   overflow: hidden;
   position: relative;
+  display: block; /* ← REQUIRED */
 }
 
 .page .document-content {
@@ -29,6 +30,13 @@
   height: calc(100% - 80px);
   box-sizing: border-box;
   overflow: visible;
+}
+.page-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  width: 100%;
 }
 
 @media print {

@@ -16,27 +16,28 @@ export function useNoteSubmit({ noteId, redirectTo }: SubmitOptions = {}) {
   const [error, setError] = React.useState("");
 
   async function submit(data: NotePayload) {
-    if (isSubmitting) return;
+    if (isSubmitting) return; // mobile double-tap protection
+
     setIsSubmitting(true);
     setError("");
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
 
     try {
       const res = await fetch(noteId ? `/api/notes/${noteId}` : "/api/notes", {
         method: noteId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
+        signal: controller.signal,
       });
 
       if (!res.ok) {
         const body = await res.json().catch(() => null);
 
-        if (body?.message) {
-          setError(body.message);
-        } else if (body?.errors) {
-          setError("Please check your input fields.");
-        } else {
-          setError("Something went wrong. Please try again.");
-        }
+        if (body?.message) setError(body.message);
+        else if (body?.errors) setError("Please check your input fields.");
+        else setError("Something went wrong. Please try again.");
 
         return;
       }
@@ -44,8 +45,13 @@ export function useNoteSubmit({ noteId, redirectTo }: SubmitOptions = {}) {
       router.push(redirectTo ?? "/dashboard");
       router.refresh();
     } catch (err: any) {
-      setError(err.message || "Unexpected error occurred.");
+      if (err.name === "AbortError") {
+        setError("Network too slow. Try again.");
+      } else {
+        setError(err.message || "Unexpected error occurred.");
+      }
     } finally {
+      clearTimeout(timeout);
       setIsSubmitting(false);
     }
   }

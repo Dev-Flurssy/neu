@@ -1,38 +1,38 @@
 import puppeteer from "puppeteer";
-import { buildExportHtml } from "@/lib/export/server/buildhtml";
-
-export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const { title, contentHtml } = await req.json();
+  const { html } = await req.json();
 
-  const html = buildExportHtml(title, contentHtml);
-
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
-
+  const browser = await puppeteer.launch({ headless: true });
   const page = await browser.newPage();
 
-  await page.setContent(html, { waitUntil: "networkidle0" });
+  // Load your preview HTML inside a template
+  await page.setContent(`
+    <html>
+      <head>
+        <link rel="stylesheet" href="${process.env.BASE_URL}/styles/document.css" />
+        <link rel="stylesheet" href="${process.env.BASE_URL}/styles/preview.css" />
+      </head>
+      <body>
+        <div id="root">${html}</div>
+      </body>
+    </html>
+  `);
 
-  await page.waitForFunction("window.__done === true");
-
-  const pdf = await page.pdf({
+  const pdfBuffer = await page.pdf({
     format: "A4",
     printBackground: true,
   });
 
   await browser.close();
 
-  // ⭐ Convert Buffer → Uint8Array (TS-safe)
-  const uint8 = new Uint8Array(pdf);
+  const safeBuffer = Uint8Array.from(pdfBuffer).buffer;
 
-  return new Response(uint8, {
+  return new Response(safeBuffer, {
+    status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${title}.pdf"`,
+      "Content-Disposition": `attachment; filename="document.pdf"`,
     },
   });
 }

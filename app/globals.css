@@ -1,6 +1,4 @@
 @import "@radix-ui/themes/styles.css";
-@import "@/app/styles/document.css";
-@import "@/app/styles/preview.css";
 
 @tailwind base;
 @tailwind components;
@@ -86,9 +84,17 @@ body {
   padding-left: 1.5rem;
   margin: 1rem 0;
 }
+.ProseMirror ul {
+  list-style-type: disc;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+}
 
 .ProseMirror li {
   margin: 0.25rem 0;
+  display: list-item;
 }
 
 .ProseMirror table {
@@ -111,4 +117,22 @@ body {
 
 .ProseMirror tr:nth-child(even) td {
   background-color: #fafafa;
+}
+
+.document-preview {
+  width: 100%;
+  background: #f3f3f3;
+  padding: 40px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+}
+
+.page-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  width: 100%;
 }
