@@ -1,30 +1,30 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { parseHtmlToBlocks } from "@/lib/pagination/parse";
-import { paginateBlocks } from "@/lib/pagination/engine";
+import { parseHtmlToBlocks } from "@/lib/export/pagination/parse";
+import { paginateBlocks } from "@/lib/export/pagination/paginate";
 
 export default function PdfPreview({ html }: { html: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [css, setCss] = useState<string | null>(null);
 
-  // Load document CSS once
+  // Load CSS once
   useEffect(() => {
-    fetch("/document-base.css")
+    fetch("/base.css")
       .then((res) => res.text())
-      .then((text) => setCss(text));
+      .then(setCss);
   }, []);
 
-  async function waitForImages() {
-    const imgs = Array.from(document.querySelectorAll("img"));
+  async function waitForImages(container: HTMLElement) {
+    const imgs = Array.from(container.querySelectorAll("img"));
     await Promise.all(
       imgs.map(
         (img) =>
-          new Promise((resolve) => {
-            if (img.complete) resolve(true);
-            img.onload = () => resolve(true);
-            img.onerror = () => resolve(true);
+          new Promise<void>((resolve) => {
+            if (img.complete) resolve();
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
           }),
       ),
     );
@@ -37,21 +37,31 @@ export default function PdfPreview({ html }: { html: string }) {
       if (!ref.current || !css) return;
 
       setLoading(true);
-      ref.current.innerHTML = `<style>${css}</style>`;
 
-      // Wait for fonts + images + layout
+      // Reset preview container
+      ref.current.innerHTML = "";
+
+      // Inject CSS once
+      const styleTag = document.createElement("style");
+      styleTag.textContent = css;
+      document.head.appendChild(styleTag);
+
+      // Wait for fonts to load
       await document.fonts.ready;
-      await waitForImages();
-      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await new Promise((r) => requestAnimationFrame(r));
 
       const blocks = parseHtmlToBlocks(html);
       const result = await paginateBlocks(blocks);
 
       if (cancelled) return;
 
-      result.domPages.forEach((page) => {
-        ref.current!.appendChild(page);
-      });
+      for (const page of result.domPages) {
+        await waitForImages(page);
+        ref.current.appendChild(page);
+      }
+
+      // Signal Puppeteer
+      (window as any).__done = true;
 
       setLoading(false);
     }

@@ -1,9 +1,11 @@
+import { LayoutBlock, PaginationResult, PageLayout } from "./types";
+
 const PAGE_WIDTH = 794;
 
 /* -------------------------
    DYNAMIC PAGE HEIGHT
 -------------------------- */
-function getPageHeight() {
+function getPageHeight(): number {
   const temp = document.createElement("div");
   temp.className = "page";
   temp.style.visibility = "hidden";
@@ -11,12 +13,13 @@ function getPageHeight() {
   temp.style.top = "-99999px";
   document.body.appendChild(temp);
 
-  const content = temp.querySelector(".page-content");
+  const content = temp.querySelector(".page-content") as HTMLElement | null;
 
-  let height;
+  let height: number;
   if (content) {
     height = content.getBoundingClientRect().height;
   } else {
+    // Fallback: A4 @ 96dpi = 1123px, padding 40 top + 60 bottom
     height = 1123 - (40 + 60);
   }
 
@@ -24,7 +27,7 @@ function getPageHeight() {
   return height;
 }
 
-function createPageDom() {
+function createPageDom(): HTMLDivElement {
   const page = document.createElement("div");
   page.className = "page";
 
@@ -35,13 +38,13 @@ function createPageDom() {
   return page;
 }
 
-async function waitForImages(container) {
+async function waitForImages(container: HTMLElement): Promise<void> {
   const images = Array.from(container.querySelectorAll("img"));
 
   await Promise.all(
     images.map(
       (img) =>
-        new Promise((resolve) => {
+        new Promise<void>((resolve) => {
           if (img.complete && img.naturalWidth > 0) resolve();
           else {
             img.onload = () => resolve();
@@ -56,7 +59,7 @@ async function waitForImages(container) {
   );
 }
 
-async function loadDocumentCss() {
+async function loadDocumentCss(): Promise<string> {
   const res = await fetch("/base.css");
   return res.text();
 }
@@ -64,9 +67,12 @@ async function loadDocumentCss() {
 /* -------------------------
    BLOCK SPLITTING
 -------------------------- */
-function splitBlock(element, maxHeight) {
-  const a = element.cloneNode(true);
-  const b = element.cloneNode(true);
+function splitBlock(
+  element: HTMLElement,
+  maxHeight: number,
+): { firstPart: HTMLElement; secondPart: HTMLElement | null } {
+  const a = element.cloneNode(true) as HTMLElement;
+  const b = element.cloneNode(true) as HTMLElement;
 
   a.innerHTML = "";
   b.innerHTML = "";
@@ -78,7 +84,7 @@ function splitBlock(element, maxHeight) {
 
     const h = a.getBoundingClientRect().height;
     if (h > maxHeight) {
-      a.removeChild(a.lastChild);
+      a.removeChild(a.lastChild!);
       nodes.slice(i).forEach((n) => b.appendChild(n.cloneNode(true)));
       return { firstPart: a, secondPart: b };
     }
@@ -90,9 +96,12 @@ function splitBlock(element, maxHeight) {
 /* -------------------------
    TABLE SPLITTING
 -------------------------- */
-function splitTable(table, maxHeight) {
-  const t1 = table.cloneNode(false);
-  const t2 = table.cloneNode(false);
+function splitTable(
+  table: HTMLTableElement,
+  maxHeight: number,
+): { firstTable: HTMLTableElement; secondTable: HTMLTableElement | null } {
+  const t1 = table.cloneNode(false) as HTMLTableElement;
+  const t2 = table.cloneNode(false) as HTMLTableElement;
 
   const thead = table.querySelector("thead");
   if (thead) {
@@ -112,7 +121,7 @@ function splitTable(table, maxHeight) {
 
     const h = t1.getBoundingClientRect().height;
     if (h > maxHeight) {
-      b1.removeChild(b1.lastChild);
+      b1.removeChild(b1.lastChild!);
       rows.slice(i).forEach((r) => b2.appendChild(r.cloneNode(true)));
       return { firstTable: t1, secondTable: t2 };
     }
@@ -124,23 +133,24 @@ function splitTable(table, maxHeight) {
 /* -------------------------
    LIST CONTINUATION
 -------------------------- */
-function applyListContinuation(domPages) {
+function applyListContinuation(domPages: HTMLDivElement[]): void {
   for (let i = 1; i < domPages.length; i++) {
     const prevPage = domPages[i - 1].querySelector(".page-content");
     const currPage = domPages[i].querySelector(".page-content");
 
     if (!prevPage || !currPage) continue;
 
-    const prevLast = prevPage.lastElementChild;
-    const currFirst = currPage.firstElementChild;
+    const prevLast = prevPage.lastElementChild as HTMLElement | null;
+    const currFirst = currPage.firstElementChild as HTMLElement | null;
 
     if (!prevLast || !currFirst) continue;
 
     const endedWithList =
-      prevLast.tagName.toLowerCase() === "li" || prevLast.querySelector("li");
+      prevLast.tagName.toLowerCase() === "li" || !!prevLast.querySelector("li");
 
     const startsWithList =
-      currFirst.tagName.toLowerCase() === "li" || currFirst.querySelector("li");
+      currFirst.tagName.toLowerCase() === "li" ||
+      !!currFirst.querySelector("li");
 
     if (endedWithList && startsWithList) {
       currFirst.classList.add("list-continuation");
@@ -151,8 +161,11 @@ function applyListContinuation(domPages) {
 /* -------------------------
    MAIN PAGINATION ENGINE
 -------------------------- */
-export async function paginateBlocks(blocks, options) {
-  const pageHeight = (options && options.pageHeight) || getPageHeight();
+export async function paginateBlocks(
+  blocks: LayoutBlock[],
+  options?: { pageHeight?: number },
+): Promise<PaginationResult> {
+  const pageHeight = options?.pageHeight ?? getPageHeight();
 
   if (document.fonts && document.fonts.ready) {
     try {
@@ -160,7 +173,7 @@ export async function paginateBlocks(blocks, options) {
     } catch {}
   }
 
-  let worker = document.getElementById("pagination-worker");
+  let worker = document.getElementById("pagination-worker") as HTMLDivElement;
 
   if (!worker) {
     worker = document.createElement("div");
@@ -186,13 +199,13 @@ export async function paginateBlocks(blocks, options) {
     </div>
   `;
 
-  const workerRoot = worker.querySelector("#pagination-root");
+  const workerRoot = worker.querySelector("#pagination-root") as HTMLDivElement;
 
-  const domPages = [];
-  const logicalPages = [];
+  const domPages: HTMLDivElement[] = [];
+  const logicalPages: PageLayout[] = [];
 
   let currentPage = createPageDom();
-  let currentLogicalPage = { pageIndex: 0, blocks: [] };
+  let currentLogicalPage: PageLayout = { pageIndex: 0, blocks: [] };
   let currentHeight = 0;
 
   domPages.push(currentPage);
@@ -215,7 +228,7 @@ export async function paginateBlocks(blocks, options) {
     const wrapper = document.createElement("div");
     wrapper.innerHTML = block.html;
 
-    const element = wrapper.firstElementChild;
+    const element = wrapper.firstElementChild as HTMLElement | null;
     if (!element) continue;
 
     element.style.maxWidth = "100%";
@@ -230,23 +243,28 @@ export async function paginateBlocks(blocks, options) {
 
     workerRoot.removeChild(element);
 
-    const content = currentPage.querySelector(".page-content");
+    const content = currentPage.querySelector(
+      ".page-content",
+    ) as HTMLDivElement;
 
     /* TABLE SPLITTING */
     if (block.type === "table") {
       if (currentHeight + height > pageHeight) {
         const remaining = pageHeight - currentHeight;
 
-        const { firstTable, secondTable } = splitTable(element, remaining);
+        const { firstTable, secondTable } = splitTable(
+          element as HTMLTableElement,
+          remaining,
+        );
 
         content.appendChild(firstTable);
-        logicalPages[logicalPages.length - 1].blocks.push(block);
+        currentLogicalPage.blocks.push(block);
 
         if (secondTable) {
           startNewPage();
-          const newContent = currentPage.querySelector(".page-content");
+          const newContent = currentPage.querySelector(".page-content")!;
           newContent.appendChild(secondTable);
-          logicalPages[logicalPages.length - 1].blocks.push(block);
+          currentLogicalPage.blocks.push(block);
         }
 
         continue;
@@ -261,14 +279,14 @@ export async function paginateBlocks(blocks, options) {
         const { firstPart, secondPart } = splitBlock(element, remaining);
 
         content.appendChild(firstPart);
-        logicalPages[logicalPages.length - 1].blocks.push(block);
+        currentLogicalPage.blocks.push(block);
 
         startNewPage();
-        const newContent = currentPage.querySelector(".page-content");
+        const newContent = currentPage.querySelector(".page-content")!;
 
         if (secondPart) {
           newContent.appendChild(secondPart);
-          logicalPages[logicalPages.length - 1].blocks.push(block);
+          currentLogicalPage.blocks.push(block);
         }
 
         continue;
@@ -277,19 +295,19 @@ export async function paginateBlocks(blocks, options) {
       startNewPage();
     }
 
-    const updatedContent = currentPage.querySelector(".page-content");
+    const updatedContent = currentPage.querySelector(".page-content")!;
     updatedContent.appendChild(element);
     currentHeight += height;
-    logicalPages[logicalPages.length - 1].blocks.push(block);
+    currentLogicalPage.blocks.push(block);
   }
 
   /* CLEANUP LAST PAGE */
   const lastPage = domPages[domPages.length - 1];
-  const lastContent = lastPage.querySelector(".page-content");
+  const lastContent = lastPage.querySelector(".page-content") as HTMLElement;
 
   if (lastContent) {
     const hasChildren = lastContent.children.length > 0;
-    const hasText = lastContent.textContent.trim().length > 0;
+    const hasText = lastContent.textContent?.trim().length ?? 0;
     const tinyHeight = lastContent.scrollHeight < 20;
 
     if (!hasChildren && !hasText && tinyHeight) {

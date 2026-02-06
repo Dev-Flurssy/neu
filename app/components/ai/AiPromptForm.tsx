@@ -50,27 +50,35 @@ Page Target: ${String(pages || "Not specified")}
 ### LENGTH REQUIREMENT
 ${pageRequirement}
 
-### OUTPUT REQUIREMENTS
-1. Structure
-   - Start with a clear title (H1)
-   - Add a short overview section (H2)
-   - Add 3–6 major sections (H2)
-   - Each major section must contain:
-     - Subsections (H3)
-     - Bullet points
-     - Definitions, examples, and explanations
+### GLOBAL RULES (IMPORTANT)
+- Use ONLY Markdown syntax.
+- Use ONLY #, ##, ### for headings.
+- Do NOT use heading underline syntax (=== or ---).
+- Do NOT include HTML.
+- Do NOT include commentary, explanations, or meta text.
+- Do NOT include phrases like "Here is your content" or "As requested".
+- Output MUST be valid Markdown only.
 
-2. Formatting
-   - Use only Markdown (no HTML)
-   - Use H1 → H3 headings only
-   - Use bullet points, numbered lists, and bold keywords
+### STRUCTURE REQUIREMENTS
+1. Start with a clear title using H1 (#).
+2. Add a short "Overview" section using H2 (##).
+3. Add 3–6 major sections using H2 (##).
+4. Inside each major section:
+   - Include subsections using H3 (###).
+   - Use bullet points.
+   - Include definitions, examples, and explanations.
+   - Use bold for key terms.
 
-3. Tone
-   - Tone must match: **${String(tone)}**
+### FORMATTING RULES
+- Use bullet points (- or *).
+- Use numbered lists where appropriate.
+- Use bold for important concepts.
+- Avoid long paragraphs; break content into readable chunks.
+- No code blocks unless absolutely necessary.
 
-4. Final Section
-   - Add a “Summary” section (H2)
-   - Add 5–10 key takeaways as bullet points
+### FINAL SECTION
+- Add a "Summary" section using H2 (##).
+- Include 5–10 key takeaways as bullet points.
 
 Return ONLY the Markdown content with no commentary.
 `;

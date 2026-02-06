@@ -1,4 +1,9 @@
-export type BlockType = "paragraph" | "heading" | "image" | "table" | "list";
+export type BlockType =
+  | "paragraph"
+  | "heading"
+  | "image"
+  | "table"
+  | "list-item";
 
 export interface LayoutBlock {
   id: string;

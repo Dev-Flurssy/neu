@@ -6,7 +6,11 @@ import { NoteViewSkeleton } from "@/app/components/skeleton/NoteViewSkeleton";
 import PdfPreview from "@/app/components/editor/PdfPreview";
 import { ExportDropdown } from "@/app/components/editor/ExportDropdown";
 
-export default function NotePage({ params }: { params: { noteid: string } }) {
+export default function NotePreview({
+  params,
+}: {
+  params: { noteid: string };
+}) {
   const router = useRouter();
   const { note, loading, error, deleteNote } = useNote(params.noteid);
 

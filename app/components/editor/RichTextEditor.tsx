@@ -165,7 +165,7 @@ const RichTextEditor = forwardRef(function RichTextEditor(
               editor
                 .chain()
                 .focus()
-                .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+                .insertTable({ rows: 2, cols: 2, withHeaderRow: true })
                 .run()
             }
             className="px-2 py-1 border rounded text-xs sm:text-sm"

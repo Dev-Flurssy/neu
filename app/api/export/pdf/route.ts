@@ -1,38 +1,56 @@
 import puppeteer from "puppeteer";
+import { NextResponse } from "next/server";
+import { buildExportHtml } from "@/lib/export/server/buildhtml";
+
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const { html } = await req.json();
+  try {
+    const { title, html } = await req.json();
 
-  const browser = await puppeteer.launch({ headless: true });
-  const page = await browser.newPage();
+    if (!html) {
+      return new NextResponse("Missing HTML", { status: 400 });
+    }
 
-  // Load your preview HTML inside a template
-  await page.setContent(`
-    <html>
-      <head>
-        <link rel="stylesheet" href="${process.env.BASE_URL}/styles/document.css" />
-        <link rel="stylesheet" href="${process.env.BASE_URL}/styles/preview.css" />
-      </head>
-      <body>
-        <div id="root">${html}</div>
-      </body>
-    </html>
-  `);
+    const exportHtml = buildExportHtml(title ?? "document", html);
 
-  const pdfBuffer = await page.pdf({
-    format: "A4",
-    printBackground: true,
-  });
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+      ],
+    });
 
-  await browser.close();
+    const page = await browser.newPage();
 
-  const safeBuffer = Uint8Array.from(pdfBuffer).buffer;
+    await page.setContent(exportHtml, { waitUntil: "domcontentloaded" });
 
-  return new Response(safeBuffer, {
-    status: 200,
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="document.pdf"`,
-    },
-  });
+    // Wait for pagination to finish
+    await page.waitForFunction(() => (window as any).__done === true, {
+      timeout: 30000,
+    });
+
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      preferCSSPageSize: true,
+    });
+
+    await browser.close();
+
+    const pdfUint8 = new Uint8Array(pdfBuffer);
+
+    return new NextResponse(pdfUint8, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="${title ?? "document"}.pdf"`,
+      },
+    });
+  } catch (err) {
+    console.error("PDF Export Error:", err);
+    return new NextResponse("Failed to generate PDF", { status: 500 });
+  }
 }
