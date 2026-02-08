@@ -8,8 +8,9 @@ export async function exportNote(
   format: ExportFormat,
   title: string,
   content: string,
+  noteId?: string,
 ) {
-  if (format === "pdf") return exportPDF(title, content);
+  if (format === "pdf") return exportPDF(title, content, noteId);
   if (format === "docx") return exportDOCX(title, content);
   if (format === "pptx") return exportPPTX(title, content);
 }

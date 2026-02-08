@@ -4,24 +4,10 @@ const PAGE_WIDTH = 794;
    DYNAMIC PAGE HEIGHT
 -------------------------- */
 function getPageHeight() {
-  const temp = document.createElement("div");
-  temp.className = "page";
-  temp.style.visibility = "hidden";
-  temp.style.position = "absolute";
-  temp.style.top = "-99999px";
-  document.body.appendChild(temp);
-
-  const content = temp.querySelector(".page-content");
-
-  let height;
-  if (content) {
-    height = content.getBoundingClientRect().height;
-  } else {
-    height = 1123 - (40 + 60);
-  }
-
-  temp.remove();
-  return height;
+  // Fixed height calculation: A4 @ 96dpi = 1123px
+  // Padding: 80px top + 150px bottom = 230px
+  // Content height: 1123 - 230 = 893px
+  return 893;
 }
 
 function createPageDom() {
@@ -151,8 +137,11 @@ function applyListContinuation(domPages) {
 /* -------------------------
    MAIN PAGINATION ENGINE
 -------------------------- */
-export async function paginateBlocks(blocks, options) {
+window.paginateBlocks = async function (blocks, options) {
+  console.log("paginateBlocks called with", blocks.length, "blocks");
+  
   const pageHeight = (options && options.pageHeight) || getPageHeight();
+  console.log("Page height:", pageHeight);
 
   if (document.fonts && document.fonts.ready) {
     try {
@@ -177,16 +166,21 @@ export async function paginateBlocks(blocks, options) {
     document.body.appendChild(worker);
   }
 
-  const css = await loadDocumentCss();
+  // CSS is already in the document head, no need to fetch
+  const css = "";
 
   worker.innerHTML = `
-    <style>${css}</style>
     <div class="page">
       <div class="page-content document-content" id="pagination-root"></div>
     </div>
   `;
 
   const workerRoot = worker.querySelector("#pagination-root");
+  
+  if (!workerRoot) {
+    console.error("Could not find pagination-root");
+    throw new Error("Pagination root not found");
+  }
 
   const domPages = [];
   const logicalPages = [];
@@ -283,22 +277,48 @@ export async function paginateBlocks(blocks, options) {
     logicalPages[logicalPages.length - 1].blocks.push(block);
   }
 
-  /* CLEANUP LAST PAGE */
-  const lastPage = domPages[domPages.length - 1];
-  const lastContent = lastPage.querySelector(".page-content");
+  /* CLEANUP EMPTY PAGES */
+  // Remove empty pages at the beginning
+  while (domPages.length > 0) {
+    const firstPage = domPages[0];
+    const firstContent = firstPage.querySelector(".page-content");
+    
+    if (firstContent) {
+      const hasChildren = firstContent.children.length > 0;
+      const hasText = (firstContent.textContent || "").trim().length > 0;
+      
+      if (!hasChildren || !hasText) {
+        domPages.shift();
+        logicalPages.shift();
+      } else {
+        break;
+      }
+    } else {
+      break;
+    }
+  }
 
-  if (lastContent) {
-    const hasChildren = lastContent.children.length > 0;
-    const hasText = lastContent.textContent.trim().length > 0;
-    const tinyHeight = lastContent.scrollHeight < 20;
+  // Remove empty pages at the end
+  while (domPages.length > 0) {
+    const lastPage = domPages[domPages.length - 1];
+    const lastContent = lastPage.querySelector(".page-content");
 
-    if (!hasChildren && !hasText && tinyHeight) {
-      domPages.pop();
-      logicalPages.pop();
+    if (lastContent) {
+      const hasChildren = lastContent.children.length > 0;
+      const hasText = (lastContent.textContent || "").trim().length > 0;
+
+      if (!hasChildren || !hasText) {
+        domPages.pop();
+        logicalPages.pop();
+      } else {
+        break;
+      }
+    } else {
+      break;
     }
   }
 
   applyListContinuation(domPages);
 
   return { pages: logicalPages, domPages };
-}
+};

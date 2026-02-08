@@ -1,4 +1,4 @@
-export async function exportPDF(title: string, html: string) {
+export async function exportPDF(title: string, html: string, noteId?: string) {
   const res = await fetch("/api/export/pdf", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

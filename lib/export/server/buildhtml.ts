@@ -61,18 +61,24 @@ ${paginationJs}
   <script>
     (async function () {
       try {
+        console.log("Starting pagination...");
+        
         if (!window.parseHtmlToBlocks || !window.paginateBlocks) {
-          console.log("Missing pagination globals");
+          console.error("Missing pagination globals");
           window.__done = "error";
           return;
         }
 
         const blocks = window.parseHtmlToBlocks(window.__HTML__);
+        console.log("Parsed blocks:", blocks.length);
+        
         const { domPages } = await window.paginateBlocks(blocks);
+        console.log("Generated pages:", domPages.length);
 
         const root = document.getElementById("root");
         domPages.forEach((p) => root.appendChild(p));
 
+        console.log("Pagination complete");
         window.__done = true;
       } catch (e) {
         console.error("Pagination failed", e);

@@ -6,25 +6,10 @@ const PAGE_WIDTH = 794;
    DYNAMIC PAGE HEIGHT
 -------------------------- */
 function getPageHeight(): number {
-  const temp = document.createElement("div");
-  temp.className = "page";
-  temp.style.visibility = "hidden";
-  temp.style.position = "absolute";
-  temp.style.top = "-99999px";
-  document.body.appendChild(temp);
-
-  const content = temp.querySelector(".page-content") as HTMLElement | null;
-
-  let height: number;
-  if (content) {
-    height = content.getBoundingClientRect().height;
-  } else {
-    // Fallback: A4 @ 96dpi = 1123px, padding 40 top + 60 bottom
-    height = 1123 - (40 + 60);
-  }
-
-  temp.remove();
-  return height;
+  // Fixed height calculation: A4 @ 96dpi = 1123px
+  // Padding: 80px top + 150px bottom = 230px
+  // Content height: 1123 - 230 = 893px
+  return 893;
 }
 
 function createPageDom(): HTMLDivElement {
@@ -301,18 +286,44 @@ export async function paginateBlocks(
     currentLogicalPage.blocks.push(block);
   }
 
-  /* CLEANUP LAST PAGE */
-  const lastPage = domPages[domPages.length - 1];
-  const lastContent = lastPage.querySelector(".page-content") as HTMLElement;
+  /* CLEANUP EMPTY PAGES */
+  // Remove empty pages at the beginning
+  while (domPages.length > 0) {
+    const firstPage = domPages[0];
+    const firstContent = firstPage.querySelector(".page-content") as HTMLElement;
+    
+    if (firstContent) {
+      const hasChildren = firstContent.children.length > 0;
+      const hasText = (firstContent.textContent?.trim().length ?? 0) > 0;
+      
+      if (!hasChildren || !hasText) {
+        domPages.shift();
+        logicalPages.shift();
+      } else {
+        break;
+      }
+    } else {
+      break;
+    }
+  }
 
-  if (lastContent) {
-    const hasChildren = lastContent.children.length > 0;
-    const hasText = lastContent.textContent?.trim().length ?? 0;
-    const tinyHeight = lastContent.scrollHeight < 20;
+  // Remove empty pages at the end
+  while (domPages.length > 0) {
+    const lastPage = domPages[domPages.length - 1];
+    const lastContent = lastPage.querySelector(".page-content") as HTMLElement;
 
-    if (!hasChildren && !hasText && tinyHeight) {
-      domPages.pop();
-      logicalPages.pop();
+    if (lastContent) {
+      const hasChildren = lastContent.children.length > 0;
+      const hasText = (lastContent.textContent?.trim().length ?? 0) > 0;
+
+      if (!hasChildren || !hasText) {
+        domPages.pop();
+        logicalPages.pop();
+      } else {
+        break;
+      }
+    } else {
+      break;
     }
   }
 

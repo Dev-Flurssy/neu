@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { parseHtmlToBlocks } from "@/lib/export/pagination/parse";
+import { parseHtmlToBlocks } from "@/lib/export/pagination/parseUnified";
 import { paginateBlocks } from "@/lib/export/pagination/paginate";
 
 export default function PdfPreview({ html }: { html: string }) {
@@ -75,7 +75,11 @@ export default function PdfPreview({ html }: { html: string }) {
 
   return (
     <div className="document-preview">
-      {loading && <div className="text-gray-500 text-sm">Paginating…</div>}
+      {loading && (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-gray-500 text-sm">Loading preview...</div>
+        </div>
+      )}
       <div ref={ref} className="page-stack" />
     </div>
   );

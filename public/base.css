@@ -5,22 +5,23 @@
   width: 794px;
   height: 1123px;
   background: #ffffff;
-  padding: 40px;
+  padding: 80px 80px 150px 80px;
   box-sizing: border-box;
   overflow: hidden;
   position: relative;
   display: block;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  margin: 0 auto 24px auto;
+  page-break-after: always;
+  page-break-inside: avoid;
 }
 
 /* Inner wrapper used for pagination calculations */
 .page-content {
-  /* 40 top padding + 60 visual bottom margin */
-  height: calc(100% - 100px);
-  padding-bottom: 60px;
+  height: 893px;
   box-sizing: border-box;
-  overflow: visible;
+  overflow: hidden;
 }
 
 /* ============================================================
@@ -36,8 +37,8 @@
    DOCUMENT CONTENT
    ============================================================ */
 .document-content {
-  max-width: 714px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
 
   font-family: Arial, Helvetica, sans-serif;
   font-size: 1rem;
@@ -104,8 +105,11 @@
 
 /* Underline support */
 .document-content u,
-.document-content span[style*="underline"] {
-  text-decoration: underline;
+.document-content [style*="text-decoration: underline"],
+.document-content [style*="text-decoration:underline"] {
+  text-decoration: underline !important;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
 }
 
 /* Inline colors (keep text color but don’t kill markers) */
@@ -128,11 +132,10 @@
    ============================================================ */
 .document-content ul,
 .document-content ol {
-  padding-left: 1.5rem;
+  padding-left: 2.5rem;
   margin-top: 1rem;
   margin-bottom: 1rem;
-  page-break-inside: avoid;
-  break-inside: avoid;
+  list-style-position: outside;
 }
 
 .document-content ul {
@@ -144,12 +147,35 @@
 }
 
 .document-content li {
-  margin-top: 0.35rem;
-  margin-bottom: 0.35rem;
+  margin-top: 0.4rem;
+  margin-bottom: 0.4rem;
+  margin-left: 0;
+  padding-left: 0.5rem;
   line-height: 1.6;
-  display: block;
-  page-break-inside: avoid;
-  break-inside: avoid;
+  display: list-item;
+}
+
+/* Force list markers to be visible */
+.document-content ul > li {
+  list-style-type: disc !important;
+  list-style-position: outside !important;
+}
+
+.document-content ol > li {
+  list-style-type: decimal !important;
+  list-style-position: outside !important;
+}
+
+/* Ensure list markers are visible and properly positioned */
+.document-content li::marker {
+  color: #111111 !important;
+  font-size: 1em;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  text-indent: 0px !important;
+  text-align: start !important;
+  text-align-last: start !important;
 }
 
 /* Nested lists */
@@ -157,7 +183,25 @@
 .document-content li ol {
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
-  padding-left: 1.25rem;
+  padding-left: 2rem;
+}
+
+/* Second level nested lists */
+.document-content ul ul > li {
+  list-style-type: circle !important;
+}
+
+.document-content ol ol > li {
+  list-style-type: lower-alpha !important;
+}
+
+/* Third level nested lists */
+.document-content ul ul ul > li {
+  list-style-type: square !important;
+}
+
+.document-content ol ol ol > li {
+  list-style-type: lower-roman !important;
 }
 
 /* Continuation list spacing */
@@ -246,10 +290,11 @@ body {
   counter-increment: page;
   content: counter(page);
   position: absolute;
-  bottom: 20px;
-  right: 40px;
+  bottom: 40px;
+  right: 96px;
   font-size: 0.75rem;
-  color: #6b7280;
+  color: #9ca3af;
+  font-family: Arial, sans-serif;
 }
 
 /* ============================================================
@@ -262,8 +307,12 @@ body {
 
   .page {
     box-shadow: none;
-    border-radius: 0;
+    border: none;
     margin: 0;
     page-break-after: always;
+  }
+
+  .page::after {
+    display: block;
   }
 }

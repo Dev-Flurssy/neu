@@ -52,7 +52,7 @@ export interface TableMeta {
 }
 
 export interface LayoutBlock {
-  type: "paragraph" | "heading" | "list" | "image" | "table";
+  type: "paragraph" | "heading" | "list" | "list-item" | "image" | "table";
   html: string;
   meta: {
     layout: LayoutModel;

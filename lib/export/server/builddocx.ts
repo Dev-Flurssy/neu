@@ -39,6 +39,7 @@ async function convertBlock(
     case "paragraph":
       return [buildParagraph(block)];
     case "list":
+    case "list-item":
       return buildList(block);
     case "image":
       return [await buildImage(block)];
@@ -143,7 +144,7 @@ function buildParagraph(block: LayoutBlock) {
 function buildList(block: LayoutBlock) {
   const layout = block.meta.layout;
   const inline = block.meta.inline ?? [];
-  const isOrdered = block.html.startsWith("<ol");
+  const isOrdered = block.html.includes("<ol") || block.html.match(/^\d+\./);
 
   return [
     new Paragraph({
