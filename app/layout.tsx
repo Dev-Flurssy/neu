@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";
+import "./styles/preview.css";
 import { Theme } from "@radix-ui/themes";
 import NavBar from "./components/nav-foot/NavBar";
 import Providers from "./provider";

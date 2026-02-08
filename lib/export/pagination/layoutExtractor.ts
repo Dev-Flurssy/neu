@@ -69,54 +69,49 @@ export interface PaginationResult {
 /* ----------------- EXTRACT LAYOUT & INLINE RUNS ------------------ */
 
 export function extractLayoutModel(element: HTMLElement): LayoutModel {
-  const computed = window.getComputedStyle(element);
-  const px = (v: string) => (v.endsWith("px") ? parseFloat(v) : 0);
-  const parseLineHeight = (value: string, fontSize: number) => {
-    if (value === "normal") return 1.2;
-    if (value.endsWith("px")) return parseFloat(value) / fontSize;
-    const num = parseFloat(value);
-    return !isNaN(num) ? num : 1.2;
-  };
-  const fontSize = px(computed.fontSize);
-  const lineHeight = parseLineHeight(computed.lineHeight, fontSize);
+  // For server-side rendering, return default values
+  // In a real implementation, you might want to parse inline styles
+  const style = element.style;
+  const px = (v: string) => (v && v.endsWith("px") ? parseFloat(v) : 0);
+  
   return {
-    fontSize,
-    lineHeight,
-    fontFamily: computed.fontFamily,
-    fontWeight: computed.fontWeight,
-    fontStyle: computed.fontStyle,
-    textAlign: (computed.textAlign as any) || "left",
-    marginTop: px(computed.marginTop),
-    marginBottom: px(computed.marginBottom),
-    paddingTop: px(computed.paddingTop),
-    paddingBottom: px(computed.paddingBottom),
-    paddingLeft: px(computed.paddingLeft),
-    paddingRight: px(computed.paddingRight),
-    color: computed.color,
-    backgroundColor: computed.backgroundColor,
+    fontSize: px(style.fontSize) || 16,
+    lineHeight: parseFloat(style.lineHeight) || 1.2,
+    fontFamily: style.fontFamily || "Arial",
+    fontWeight: style.fontWeight || "normal",
+    fontStyle: style.fontStyle || "normal",
+    textAlign: (style.textAlign as any) || "left",
+    marginTop: px(style.marginTop),
+    marginBottom: px(style.marginBottom),
+    paddingTop: px(style.paddingTop),
+    paddingBottom: px(style.paddingBottom),
+    paddingLeft: px(style.paddingLeft),
+    paddingRight: px(style.paddingRight),
+    color: style.color || "#000000",
+    backgroundColor: style.backgroundColor || "transparent",
   };
 }
 
 export function extractInlineRuns(root: HTMLElement): InlineRun[] {
   const runs: InlineRun[] = [];
 
-  const walk = (node: Node, inherited: Partial<InlineRun> = {}) => {
-    if (node.nodeType === Node.TEXT_NODE) {
+  const walk = (node: any, inherited: Partial<InlineRun> = {}) => {
+    if (node.nodeType === 3) { // TEXT_NODE
       const text = node.textContent ?? "";
       if (!text.trim()) return;
       runs.push({ text, ...inherited });
       return;
     }
 
-    if (node.nodeType === Node.ELEMENT_NODE) {
+    if (node.nodeType === 1) { // ELEMENT_NODE
       const el = node as HTMLElement;
-      const style = window.getComputedStyle(el);
+      const style = el.style;
       const next: Partial<InlineRun> = {
         bold:
           inherited.bold ||
           el.tagName === "B" ||
           el.tagName === "STRONG" ||
-          parseInt(style.fontWeight) >= 600,
+          (style.fontWeight && parseInt(style.fontWeight) >= 600),
         italic:
           inherited.italic ||
           el.tagName === "I" ||
@@ -125,17 +120,18 @@ export function extractInlineRuns(root: HTMLElement): InlineRun[] {
         underline:
           inherited.underline ||
           el.tagName === "U" ||
-          style.textDecorationLine.includes("underline"),
+          (style.textDecoration && style.textDecoration.includes("underline")),
         color: style.color || inherited.color,
         highlight:
+          style.backgroundColor &&
           style.backgroundColor !== "transparent" &&
           style.backgroundColor !== "rgba(0,0,0,0)"
             ? style.backgroundColor
             : inherited.highlight,
-        fontSize: parseFloat(style.fontSize) || inherited.fontSize,
+        fontSize: (style.fontSize && parseFloat(style.fontSize)) || inherited.fontSize,
         fontFamily: style.fontFamily || inherited.fontFamily,
       };
-      node.childNodes.forEach((child) => walk(child, next));
+      node.childNodes.forEach((child: any) => walk(child, next));
     }
   };
 

@@ -6,10 +6,10 @@ const PAGE_WIDTH = 794;
    DYNAMIC PAGE HEIGHT
 -------------------------- */
 function getPageHeight(): number {
-  // Fixed height calculation: A4 @ 96dpi = 1123px
-  // Padding: 80px top + 150px bottom = 230px
-  // Content height: 1123 - 230 = 893px
-  return 893;
+  // Match PDF export: A4 @ 96dpi = 1123px
+  // Padding: 76px top + 95px bottom = 171px
+  // Content height: 1123 - 171 = 952px
+  return 952;
 }
 
 function createPageDom(): HTMLDivElement {

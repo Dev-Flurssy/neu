@@ -6,11 +6,12 @@ import * as React from "react";
 interface SubmitOptions {
   noteId?: string;
   redirectTo?: string;
+  onSuccess?: (noteId: string) => void;
 }
 
 type NotePayload = { title: string; content: string };
 
-export function useNoteSubmit({ noteId, redirectTo }: SubmitOptions = {}) {
+export function useNoteSubmit({ noteId, redirectTo, onSuccess }: SubmitOptions = {}) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState("");
@@ -42,8 +43,18 @@ export function useNoteSubmit({ noteId, redirectTo }: SubmitOptions = {}) {
         return;
       }
 
-      router.push(redirectTo ?? "/dashboard");
-      router.refresh();
+      const responseData = await res.json();
+      const createdOrUpdatedNoteId = responseData?.data?.id || noteId;
+
+      // Call success callback if provided
+      if (onSuccess && createdOrUpdatedNoteId) {
+        onSuccess(createdOrUpdatedNoteId);
+      }
+
+      if (redirectTo) {
+        router.push(redirectTo);
+        router.refresh();
+      }
     } catch (err: any) {
       if (err.name === "AbortError") {
         setError("Network too slow. Try again.");

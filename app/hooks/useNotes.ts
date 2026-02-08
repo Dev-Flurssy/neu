@@ -12,12 +12,16 @@ export function useNotes() {
   const [notes, setNotes] = React.useState<Note[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = React.useState(0);
 
   React.useEffect(() => {
     const controller = new AbortController();
     let cancelled = false;
 
     async function fetchNotes() {
+      setLoading(true);
+      setError(null);
+      
       try {
         const res = await fetch("/api/notes", {
           credentials: "include",
@@ -43,7 +47,11 @@ export function useNotes() {
       cancelled = true;
       controller.abort();
     };
-  }, []);
+  }, [refreshKey]);
 
-  return { notes, loading, error };
+  function refresh() {
+    setRefreshKey(k => k + 1);
+  }
+
+  return { notes, loading, error, refresh };
 }

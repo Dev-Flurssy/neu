@@ -22,10 +22,14 @@ import type {
 
 // UNIT CONVERSION
 const PX_TO_TWIP = 15;
-const PX_TO_HALF_POINT = 0.75;
+const BASE_FONT_SIZE_PT = 14; // Base font size in points
 const pxToTwip = (px: number) => Math.round(px * PX_TO_TWIP);
-const pxToHalfPoint = (px?: number) =>
-  px == null ? undefined : Math.round(px * PX_TO_HALF_POINT);
+const pxToHalfPoint = (px?: number) => {
+  if (px == null) return BASE_FONT_SIZE_PT * 2; // Return base size in half-points (28 half-points = 14pt)
+  // Convert px to points: 14px ≈ 10.5pt, so multiply by 0.75
+  const points = px * 0.75;
+  return Math.round(points * 2); // Convert to half-points
+};
 
 // -------------------------------------------------------
 // Convert blocks → DOCX
@@ -68,12 +72,13 @@ export async function buildDocxFromPagination(pagination: PaginationResult) {
     sections.push({
       properties: {
         page: {
-          size: { width: pxToTwip(794), height: pxToTwip(1123) },
+          // Standard A4 size in twips (8.27 x 11.69 inches)
+          size: { width: 11906, height: 16838 },
           margin: {
-            top: pxToTwip(40),
-            bottom: pxToTwip(40),
-            left: pxToTwip(40),
-            right: pxToTwip(40),
+            top: pxToTwip(80),    // Increased margins
+            bottom: pxToTwip(80),
+            left: pxToTwip(80),
+            right: pxToTwip(80),
           },
         },
         ...(i > 0 ? { pageBreakBefore: true } : {}),
@@ -160,25 +165,76 @@ function buildList(block: LayoutBlock) {
 }
 
 async function buildImage(block: LayoutBlock) {
-  const img = block.meta.image!;
-  const res = await fetch(img.src);
-  const buffer = new Uint8Array(await res.arrayBuffer());
+  try {
+    const img = block.meta.image!;
+    
+    // Handle base64 images
+    let buffer: Uint8Array;
+    let imageType: "png" | "jpg" | "gif" = "png";
+    
+    if (img.src.startsWith("data:")) {
+      // Extract base64 data
+      const matches = img.src.match(/^data:image\/(png|jpeg|jpg|gif);base64,(.+)$/);
+      if (!matches) {
+        console.warn("Invalid base64 image format");
+        return new Paragraph({ text: "[Invalid image format]" });
+      }
+      
+      imageType = matches[1] === "jpeg" ? "jpg" : matches[1] as "png" | "jpg" | "gif";
+      const base64Data = matches[2];
+      buffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+    } else {
+      // Fetch external image
+      const res = await fetch(img.src);
+      if (!res.ok) {
+        console.warn(`Failed to fetch image: ${img.src}`);
+        return new Paragraph({ text: "[Image not available]" });
+      }
+      
+      // Determine type from URL or content-type
+      const contentType = res.headers.get("content-type");
+      if (contentType?.includes("jpeg") || img.src.includes(".jpg") || img.src.includes(".jpeg")) {
+        imageType = "jpg";
+      } else if (contentType?.includes("gif") || img.src.includes(".gif")) {
+        imageType = "gif";
+      }
+      
+      buffer = new Uint8Array(await res.arrayBuffer());
+    }
 
-  const maxWidth = 794 - 80;
-  const scale = Math.min(1, maxWidth / img.width);
+    // Calculate proper dimensions
+    const maxWidthTwips = 11906 - (2 * pxToTwip(80)); // Page width - margins
+    let widthTwips = pxToTwip(img.width || 400);
+    let heightTwips = pxToTwip(img.height || 300);
+    
+    // Scale down if too wide
+    if (widthTwips > maxWidthTwips) {
+      const scale = maxWidthTwips / widthTwips;
+      widthTwips = maxWidthTwips;
+      heightTwips = Math.round(heightTwips * scale);
+    }
 
-  return new Paragraph({
-    children: [
-      new ImageRun({
-        data: buffer,
-        type: "png",
-        transformation: {
-          width: img.width * scale,
-          height: img.height * scale,
-        },
-      }),
-    ],
-  });
+    return new Paragraph({
+      children: [
+        new ImageRun({
+          data: buffer,
+          type: imageType,
+          transformation: {
+            width: Math.round(widthTwips / 15), // Convert twips to pixels
+            height: Math.round(heightTwips / 15),
+          },
+        }),
+      ],
+      spacing: {
+        before: pxToTwip(12),
+        after: pxToTwip(12),
+      },
+      alignment: AlignmentType.CENTER,
+    });
+  } catch (err) {
+    console.error("Error building image:", err);
+    return new Paragraph({ text: "[Image could not be loaded]" });
+  }
 }
 
 function buildTable(block: LayoutBlock) {
@@ -236,6 +292,25 @@ function buildTable(block: LayoutBlock) {
 // -------------------------------------------------------
 // INLINE RUNS & ALIGNMENT
 // -------------------------------------------------------
+function rgbToHex(color: string | undefined): string | undefined {
+  if (!color) return undefined;
+  
+  // If already hex, return without #
+  if (color.startsWith("#")) {
+    return color.substring(1);
+  }
+  
+  // Parse rgb(r, g, b) or rgba(r, g, b, a)
+  const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!match) return undefined;
+  
+  const r = parseInt(match[1]);
+  const g = parseInt(match[2]);
+  const b = parseInt(match[3]);
+  
+  return ((r << 16) | (g << 8) | b).toString(16).padStart(6, "0");
+}
+
 function convertRun(run: InlineRun, layout: any) {
   const fontSize = run.fontSize ?? layout.fontSize;
   const fontFamily = run.fontFamily ?? layout.fontFamily;
@@ -245,9 +320,9 @@ function convertRun(run: InlineRun, layout: any) {
     bold: run.bold,
     italics: run.italic,
     underline: run.underline ? {} : undefined,
-    color: run.color?.replace("#", ""),
+    color: rgbToHex(run.color),
     shading: run.highlight
-      ? { fill: run.highlight.replace("#", "") }
+      ? { fill: rgbToHex(run.highlight) }
       : undefined,
     size: pxToHalfPoint(fontSize),
     font: fontFamily.split(",")[0].replace(/['"]/g, "").trim(),

@@ -49,6 +49,38 @@ export function useNote(noteId: string) {
     };
   }, [noteId]);
 
+  async function updateNote(updates: Partial<Note>) {
+    // Optimistic update
+    setNote(prev => prev ? { ...prev, ...updates } : null);
+
+    try {
+      const res = await fetch(`/api/notes/${noteId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        // Revert on failure - refetch the note
+        const revertRes = await fetch(`/api/notes/${noteId}`, {
+          credentials: "include",
+        });
+        if (revertRes.ok) {
+          const { data } = await revertRes.json();
+          setNote(data);
+        }
+        throw new Error("Failed to update note");
+      }
+
+      const { data } = await res.json();
+      setNote(data);
+    } catch (err: any) {
+      setError(err.message || "Failed to update note");
+      throw err;
+    }
+  }
+
   async function deleteNote() {
     const res = await fetch(`/api/notes/${noteId}`, {
       method: "DELETE",
@@ -58,5 +90,5 @@ export function useNote(noteId: string) {
     if (!res.ok) throw new Error("Failed to delete note");
   }
 
-  return { note, loading, error, deleteNote };
+  return { note, loading, error, updateNote, deleteNote };
 }

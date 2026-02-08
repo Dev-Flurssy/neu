@@ -5,6 +5,12 @@ export async function exportDOCX(title: string, html: string) {
     body: JSON.stringify({ html }),
   });
 
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("DOCX export error:", errorText);
+    throw new Error(`Failed to export DOCX: ${res.status} ${res.statusText}`);
+  }
+
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
 

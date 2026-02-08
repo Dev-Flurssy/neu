@@ -2,11 +2,13 @@ import type { LayoutBlock as SimpleBlock } from "./types";
 import type { LayoutBlock as DocxBlock } from "./layoutExtractor";
 import { extractLayoutModel, extractInlineRuns } from "./layoutExtractor";
 import type { TableCellMeta, TableRowMeta } from "./layoutExtractor";
+import { parseHTML } from "linkedom";
 
 /**
  * Unified parser that returns blocks compatible with both pagination and DOCX export
  */
 export function parseHtmlToBlocks(html: string): SimpleBlock[] {
+  const { document, Node } = parseHTML(`<!DOCTYPE html><html><body></body></html>`);
   const container = document.createElement("div");
   container.innerHTML = html;
 

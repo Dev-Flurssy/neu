@@ -1,13 +1,12 @@
 /* ============================================================
-   PAGE CONTAINER (A4 @ 96 DPI)
+   PAGE CONTAINER (A4 @ 96 DPI) - Matches PDF Export
    ============================================================ */
 .page {
   width: 794px;
-  height: 1123px;
+  min-height: 1123px; /* Changed from fixed height to min-height */
   background: #ffffff;
-  padding: 80px 80px 150px 80px;
+  padding: 76px 76px 95px 76px; /* Matches PDF: 20mm top/sides, 25mm bottom */
   box-sizing: border-box;
-  overflow: hidden;
   position: relative;
   display: block;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -19,9 +18,8 @@
 
 /* Inner wrapper used for pagination calculations */
 .page-content {
-  height: 893px;
+  min-height: 952px; /* Adjusted: 1123 - 76 - 95 = 952px */
   box-sizing: border-box;
-  overflow: hidden;
 }
 
 /* ============================================================

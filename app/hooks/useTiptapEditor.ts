@@ -41,12 +41,40 @@ export function useTiptapEditor(
         bulletList: false,
         orderedList: false,
         listItem: false,
+        strike: false, // Disable strike to avoid conflicts
       }),
 
       Heading.configure({ levels: [1, 2, 3] }),
-      BulletList,
-      OrderedList,
-      ListItem,
+      BulletList.configure({
+        keepMarks: true,
+        keepAttributes: false,
+      }),
+      OrderedList.configure({
+        keepMarks: true,
+        keepAttributes: false,
+      }),
+      ListItem.extend({
+        addKeyboardShortcuts() {
+          return {
+            Enter: () => {
+              // If current list item is empty, exit the list
+              const { state } = this.editor;
+              const { $from } = state.selection;
+              const node = $from.node($from.depth);
+              
+              if (node.type.name === 'listItem' && node.textContent.length === 0) {
+                return this.editor.commands.liftListItem('listItem');
+              }
+              
+              return false;
+            },
+          };
+        },
+      }).configure({
+        HTMLAttributes: {
+          class: 'list-item',
+        },
+      }),
 
       Image.configure({ allowBase64: true }),
       Placeholder.configure({

@@ -11,7 +11,10 @@ export async function POST(req: Request) {
     const validated = authSchema.safeParse(body);
     if (!validated.success) {
       return NextResponse.json(
-        { errors: validated.error.flatten().fieldErrors },
+        { 
+          error: "Validation failed",
+          errors: validated.error.flatten().fieldErrors 
+        },
         { status: 400 },
       );
     }
@@ -25,13 +28,13 @@ export async function POST(req: Request) {
 
     if (existingUser) {
       return NextResponse.json(
-        { error: "User already exists" },
+        { error: "An account with this email already exists" },
         { status: 409 },
       );
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash password with higher cost factor for better security
+    const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create user
     const user = await prisma.user.create({
@@ -48,10 +51,27 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(
-      { message: "Account created successfully", user },
+      { 
+        success: true,
+        message: "Account created successfully", 
+        data: user 
+      },
       { status: 201 },
     );
-  } catch (err) {
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  } catch (err: any) {
+    console.error("Registration error:", err);
+    
+    // Handle specific Prisma errors
+    if (err.code === "P2002") {
+      return NextResponse.json(
+        { error: "An account with this email already exists" },
+        { status: 409 },
+      );
+    }
+
+    return NextResponse.json(
+      { error: "Failed to create account. Please try again." },
+      { status: 500 },
+    );
   }
 }
