@@ -6,7 +6,7 @@ import { noteUpdateSchema } from "@/lib/note";
 
 export async function GET(
   _: Request,
-  { params }: { params: { noteid: string } },
+  { params }: { params: Promise<{ noteid: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -14,8 +14,10 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { noteid } = await params;
+
     const note = await prisma.note.findUnique({
-      where: { id: params.noteid },
+      where: { id: noteid },
     });
 
     if (!note || note.userId !== session.user.id) {
@@ -30,13 +32,15 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { noteid: string } },
+  { params }: { params: Promise<{ noteid: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const { noteid } = await params;
 
     const body = await req.json();
     const parsed = noteUpdateSchema.safeParse(body);
@@ -49,7 +53,7 @@ export async function PATCH(
     }
 
     const note = await prisma.note.findUnique({
-      where: { id: params.noteid },
+      where: { id: noteid },
     });
 
     if (!note || note.userId !== session.user.id) {
@@ -69,7 +73,7 @@ export async function PATCH(
 
 export async function DELETE(
   _: Request,
-  { params }: { params: { noteid: string } },
+  { params }: { params: Promise<{ noteid: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -77,8 +81,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { noteid } = await params;
+
     const note = await prisma.note.findUnique({
-      where: { id: params.noteid },
+      where: { id: noteid },
     });
 
     if (!note || note.userId !== session.user.id) {

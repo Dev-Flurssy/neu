@@ -15,10 +15,27 @@ const LoginPage = () => {
 
   // Redirect if already logged in
   useEffect(() => {
-    if (status === "authenticated") {
-      router.push("/dashboard");
-    }
-  }, [status, router]);
+    const checkRoleAndRedirect = async () => {
+      if (status === "authenticated" && session?.user?.email) {
+        try {
+          // Check if user is admin
+          const res = await fetch("/api/admin/stats");
+          if (res.ok) {
+            // User is admin, redirect to admin panel
+            router.push("/admin");
+          } else {
+            // Regular user, redirect to dashboard
+            router.push("/dashboard");
+          }
+        } catch {
+          // Default to dashboard on error
+          router.push("/dashboard");
+        }
+      }
+    };
+    
+    checkRoleAndRedirect();
+  }, [status, session, router]);
 
   // Show loading while checking session or during login
   if (status === "loading" || loading) return <AuthSkeleton />;
@@ -126,9 +143,17 @@ const LoginPage = () => {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <Link 
+                  href="/forgot-password" 
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <input
                 id="password"
                 type="password"

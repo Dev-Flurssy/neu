@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import { prisma } from "@/lib/prisma";
-import { credentialsSchema, CredentialsSchema } from "@/lib/schema";
+import { credentialsSchema } from "@/lib/schema";
 
 export async function authorizeCredentials(credentials: unknown) {
   const validated = credentialsSchema.safeParse(credentials);

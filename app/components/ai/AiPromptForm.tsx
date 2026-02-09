@@ -35,11 +35,11 @@ export function AiPromptForm({ onInsert }: AiPromptFormProps) {
 
     const pageRequirement =
       pages === ""
-        ? `Generate a natural-length set of lecture notes appropriate for a university-level class.`
-        : `Generate enough content to realistically fill **${pages} full A4 page(s)**.`;
+        ? `Generate a complete set of lecture notes with natural length appropriate for a university-level class (typically 2-3 pages worth of content).`
+        : `Generate a COMPLETE note with enough detailed content to fill approximately ${pages} full A4 page(s). This means substantial content with multiple sections, subsections, examples, and explanations.`;
 
     const prompt = `
-Generate highly structured academic lecture notes in clean Markdown.
+Generate a COMPLETE, ready-to-use academic lecture note in clean Markdown format.
 
 ### INPUT
 Topic: ${String(topic)}
@@ -47,40 +47,40 @@ Description: ${String(description || "N/A")}
 Tone: ${String(tone)}
 Page Target: ${String(pages || "Not specified")}
 
-### LENGTH REQUIREMENT
+### LENGTH REQUIREMENT (CRITICAL)
 ${pageRequirement}
 
-### GLOBAL RULES (IMPORTANT)
-- Use ONLY Markdown syntax.
-- Use ONLY #, ##, ### for headings.
-- Do NOT use heading underline syntax (=== or ---).
-- Do NOT include HTML.
-- Do NOT include commentary, explanations, or meta text.
-- Do NOT include phrases like "Here is your content" or "As requested".
-- Output MUST be valid Markdown only.
+IMPORTANT: Generate the FULL note content now. Do not provide outlines or summaries. The user expects a complete, detailed note they can use immediately.
+
+### OUTPUT FORMAT RULES
+- Use ONLY Markdown syntax (no HTML)
+- Use ONLY #, ##, ### for headings (no underline syntax === or ---)
+- Do NOT include any commentary, meta-text, or phrases like "Here is your content"
+- Output MUST be pure Markdown content only
 
 ### STRUCTURE REQUIREMENTS
-1. Start with a clear title using H1 (#).
-2. Add a short "Overview" section using H2 (##).
-3. Add 3–6 major sections using H2 (##).
-4. Inside each major section:
-   - Include subsections using H3 (###).
-   - Use bullet points.
-   - Include definitions, examples, and explanations.
-   - Use bold for key terms.
+1. Start with a clear title using H1 (#)
+2. Add an "Overview" section using H2 (##) with 2-3 paragraphs
+3. Create ${pages && pages > 1 ? `${Math.max(3, Math.min(6, pages * 2))}` : "3-6"} major sections using H2 (##)
+4. Each major section should contain:
+   - Multiple subsections using H3 (###)
+   - Detailed explanations with bullet points
+   - Definitions of key terms (use **bold**)
+   - Concrete examples
+   - Important concepts and relationships
 
 ### FORMATTING RULES
-- Use bullet points (- or *).
-- Use numbered lists where appropriate.
-- Use bold for important concepts.
-- Avoid long paragraphs; break content into readable chunks.
-- No code blocks unless absolutely necessary.
+- Use bullet points (- or *) for lists
+- Use numbered lists for sequential steps or processes
+- Use **bold** for key terms and important concepts
+- Break content into readable chunks
+- Include sufficient detail to meet the page requirement
 
 ### FINAL SECTION
-- Add a "Summary" section using H2 (##).
-- Include 5–10 key takeaways as bullet points.
+- End with a "Summary" or "Key Takeaways" section using H2 (##)
+- Include 5-10 bullet points summarizing main concepts
 
-Return ONLY the Markdown content with no commentary.
+Generate the COMPLETE note now. Return ONLY the Markdown content.
 `;
 
     try {

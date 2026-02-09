@@ -1,5 +1,6 @@
 "use client";
 
+import { use } from "react";
 import { useRouter } from "next/navigation";
 import { useNote } from "@/app/hooks/useNote";
 import { NoteViewSkeleton } from "@/app/components/skeleton/NoteViewSkeleton";
@@ -9,10 +10,11 @@ import { useEffect, useState } from "react";
 export default function NotePreview({
   params,
 }: {
-  params: { noteid: string };
+  params: Promise<{ noteid: string }>;
 }) {
+  const { noteid } = use(params);
   const router = useRouter();
-  const { note, loading, error, deleteNote } = useNote(params.noteid);
+  const { note, loading, error, deleteNote } = useNote(noteid);
   const [pages, setPages] = useState<string[]>([]);
   const [isPaginating, setIsPaginating] = useState(true);
 

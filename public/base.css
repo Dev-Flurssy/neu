@@ -1,6 +1,4 @@
-/* ============================================================
-   PAGE CONTAINER (A4 @ 96 DPI) - Matches PDF Export
-   ============================================================ */
+/* Page container (A4 @ 96 DPI) - Matches PDF Export */
 .page {
   width: 794px;
   min-height: 1123px; /* Changed from fixed height to min-height */
@@ -22,18 +20,14 @@
   box-sizing: border-box;
 }
 
-/* ============================================================
-   GLOBAL RESET TO PREVENT MARGIN COLLAPSE
-   ============================================================ */
+/* Global reset to prevent margin collapse */
 .page-content,
 .document-content {
   margin-block-start: 0;
   margin-block-end: 0;
 }
 
-/* ============================================================
-   DOCUMENT CONTENT
-   ============================================================ */
+/* Document content */
 .document-content {
   max-width: 100%;
   margin: 0;
@@ -47,9 +41,7 @@
   overflow-wrap: break-word;
 }
 
-/* ============================================================
-   HEADINGS
-   ============================================================ */
+/* Headings */
 .document-content h1,
 .document-content h2,
 .document-content h3,
@@ -83,14 +75,12 @@
   font-weight: 600;
 }
 
-/* ============================================================
-   PARAGRAPHS & INLINE TEXT
-   ============================================================ */
+/* Paragraphs & inline text */
 .document-content p {
   margin-top: 0.9rem;
   margin-bottom: 0.9rem;
-  page-break-inside: avoid;
-  break-inside: avoid;
+  orphans: 3;
+  widows: 3;
 }
 
 .document-content strong {
@@ -125,15 +115,15 @@
   background-color: inherit;
 }
 
-/* ============================================================
-   LISTS (DISC + DECIMAL)
-   ============================================================ */
+/* Lists (disc + decimal) */
 .document-content ul,
 .document-content ol {
   padding-left: 2.5rem;
   margin-top: 1rem;
   margin-bottom: 1rem;
   list-style-position: outside;
+  page-break-inside: auto;
+  break-inside: auto;
 }
 
 .document-content ul {
@@ -151,6 +141,10 @@
   padding-left: 0.5rem;
   line-height: 1.6;
   display: list-item;
+  page-break-inside: avoid;
+  break-inside: avoid;
+  orphans: 2;
+  widows: 2;
 }
 
 /* Force list markers to be visible */
@@ -207,9 +201,7 @@
   margin-top: 1.2rem !important;
 }
 
-/* ============================================================
-   IMAGES
-   ============================================================ */
+/* Images */
 .document-content img {
   max-width: 100%;
   height: auto;
@@ -218,11 +210,11 @@
 
   page-break-inside: avoid;
   break-inside: avoid;
+  page-break-before: auto;
+  page-break-after: auto;
 }
 
-/* ============================================================
-   TABLES
-   ============================================================ */
+/* Tables */
 .document-content table {
   width: 100%;
   border-collapse: collapse;
@@ -268,18 +260,14 @@
   }
 }
 
-/* ============================================================
-   CODE / PREFORMATTED TEXT
-   ============================================================ */
+/* Code / preformatted text */
 .document-content pre,
 .document-content code {
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-/* ============================================================
-   PAGE NUMBERS
-   ============================================================ */
+/* Page numbers */
 body {
   counter-reset: page;
 }
@@ -295,9 +283,7 @@ body {
   font-family: Arial, sans-serif;
 }
 
-/* ============================================================
-   PRINT OVERRIDES
-   ============================================================ */
+/* Print overrides */
 @media print {
   body {
     background: none;

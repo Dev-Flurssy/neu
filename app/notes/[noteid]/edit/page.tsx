@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { use } from "react";
 import { useRouter } from "next/navigation";
 import { NoteForm } from "@/app/components/notes/NoteForm";
 import { NoteFormSkeleton } from "@/app/components/skeleton/NoteFormSkeleton";
@@ -10,15 +11,16 @@ import { useNote } from "@/app/hooks/useNote";
 export default function EditNotePage({
   params,
 }: {
-  params: { noteid: string };
+  params: Promise<{ noteid: string }>;
 }) {
+  const { noteid } = use(params);
   const router = useRouter();
   const { submit, isSubmitting, error } = useNoteSubmit({
-    noteId: params.noteid,
-    redirectTo: `/notes/${params.noteid}`,
+    noteId: noteid,
+    redirectTo: `/notes/${noteid}`,
   });
 
-  const { note, loading } = useNote(params.noteid);
+  const { note, loading } = useNote(noteid);
 
   if (loading || !note) return <NoteFormSkeleton />;
 

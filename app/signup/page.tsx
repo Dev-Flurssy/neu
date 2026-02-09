@@ -15,10 +15,27 @@ const SignupPage = () => {
 
   // Redirect if already logged in
   useEffect(() => {
-    if (status === "authenticated") {
-      router.push("/dashboard");
-    }
-  }, [status, router]);
+    const checkRoleAndRedirect = async () => {
+      if (status === "authenticated" && session?.user?.email) {
+        try {
+          // Check if user is admin
+          const res = await fetch("/api/admin/stats");
+          if (res.ok) {
+            // User is admin, redirect to admin panel
+            router.push("/admin");
+          } else {
+            // Regular user, redirect to dashboard
+            router.push("/dashboard");
+          }
+        } catch {
+          // Default to dashboard on error
+          router.push("/dashboard");
+        }
+      }
+    };
+    
+    checkRoleAndRedirect();
+  }, [status, session, router]);
 
   // Show loading while checking session or during signup
   if (status === "loading" || loading) return <AuthSkeleton />;

@@ -43,14 +43,7 @@ const RichTextEditor = forwardRef(function RichTextEditor(
 
   return (
     <div className="space-y-2 w-full">
-      <div
-        className="
-          border rounded-lg bg-white shadow-sm 
-          w-full 
-          h-[350px] sm:h-[500px] lg:h-[600px] 
-          overflow-y-auto relative
-        "
-      >
+      <div className="border rounded-lg bg-white shadow-sm w-full h-[350px] sm:h-[500px] lg:h-[600px] overflow-y-auto relative">
         {/* Toolbar */}
         <div className="border-b bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 z-10">
           {/* Main Toolbar - Desktop */}
