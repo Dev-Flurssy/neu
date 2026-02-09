@@ -111,7 +111,7 @@ export function extractInlineRuns(root: HTMLElement): InlineRun[] {
           inherited.bold ||
           el.tagName === "B" ||
           el.tagName === "STRONG" ||
-          (style.fontWeight && parseInt(style.fontWeight) >= 600),
+          !!(style.fontWeight && parseInt(style.fontWeight) >= 600),
         italic:
           inherited.italic ||
           el.tagName === "I" ||
@@ -120,7 +120,7 @@ export function extractInlineRuns(root: HTMLElement): InlineRun[] {
         underline:
           inherited.underline ||
           el.tagName === "U" ||
-          (style.textDecoration && style.textDecoration.includes("underline")),
+          !!(style.textDecoration && style.textDecoration.includes("underline")),
         color: style.color || inherited.color,
         highlight:
           style.backgroundColor &&

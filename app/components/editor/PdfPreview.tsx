@@ -38,15 +38,7 @@ export default function PdfPreview({ html }: { html: string }) {
 
       setLoading(true);
 
-      // Reset preview container
-      ref.current.innerHTML = "";
-
-      // Inject CSS once
-      const styleTag = document.createElement("style");
-      styleTag.textContent = css;
-      document.head.appendChild(styleTag);
-
-      // Wait for fonts to load
+      // Wait for fonts to load first
       await document.fonts.ready;
       await new Promise((r) => requestAnimationFrame(r));
 
@@ -55,8 +47,17 @@ export default function PdfPreview({ html }: { html: string }) {
 
       if (cancelled) return;
 
+      // Wait for all images in all pages to load before displaying
       for (const page of result.domPages) {
         await waitForImages(page);
+      }
+
+      if (cancelled) return;
+
+      // Now clear and display all pages at once
+      ref.current.innerHTML = "";
+      
+      for (const page of result.domPages) {
         ref.current.appendChild(page);
       }
 

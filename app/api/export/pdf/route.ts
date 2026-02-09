@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { launchBrowser, waitForImages, closeBrowser } from "@/lib/export/server/puppeteer-utils";
-import { createPdfHtml } from "@/lib/export/server/html-templates";
+import { createPdfHtmlWithPagination } from "@/lib/export/server/html-templates";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -15,10 +15,17 @@ export async function POST(req: Request) {
       return new NextResponse("Missing HTML", { status: 400 });
     }
 
-    const fullHtml = createPdfHtml(title, html);
+    const fullHtml = createPdfHtmlWithPagination(title, html);
 
     browser = await launchBrowser();
     const page = await browser.newPage();
+    
+    // Set viewport to match preview rendering
+    await page.setViewport({
+      width: 794,
+      height: 1123,
+      deviceScaleFactor: 1,
+    });
 
     await page.setContent(fullHtml, { 
       waitUntil: "networkidle0",
@@ -26,6 +33,14 @@ export async function POST(req: Request) {
     });
 
     await waitForImages(page);
+
+    // Wait for pagination to complete
+    await page.waitForFunction(() => (window as any).__done === true, {
+      timeout: 30000,
+    });
+
+    // Small delay to ensure rendering is complete
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     const pdfBuffer = await page.pdf({
       format: "A4",
@@ -36,13 +51,6 @@ export async function POST(req: Request) {
         left: "20mm",
         right: "20mm",
       },
-      displayHeaderFooter: true,
-      headerTemplate: '<div></div>',
-      footerTemplate: `
-        <div style="font-size: 9pt; text-align: center; width: 100%; color: #666;">
-          <span class="pageNumber"></span> / <span class="totalPages"></span>
-        </div>
-      `,
     });
 
     await browser.close();

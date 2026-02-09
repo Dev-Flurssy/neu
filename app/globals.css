@@ -164,3 +164,33 @@ body {
   gap: 40px;
   width: 100%;
 }
+
+/* TipTap Resizable Images */
+.ProseMirror img.resizable-image {
+  max-width: 100%;
+  height: auto;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.ProseMirror img.resizable-image:hover {
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+
+.ProseMirror img.ProseMirror-selectednode {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Image resize handles */
+.ProseMirror .image-resizer {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.ProseMirror .image-resizer img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}

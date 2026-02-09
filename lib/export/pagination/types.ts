@@ -3,6 +3,7 @@ export type BlockType =
   | "heading"
   | "image"
   | "table"
+  | "list"
   | "list-item";
 
 export interface LayoutBlock {

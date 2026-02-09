@@ -4,6 +4,37 @@ import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
 import Image from "@tiptap/extension-image";
+import { ReactNodeViewRenderer } from "@tiptap/react";
+import { ResizableImageView } from "../components/editor/ResizableImageView";
+
+// Extend Image to support resizing with custom NodeView
+const ResizableImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: null,
+        parseHTML: element => element.getAttribute('width'),
+        renderHTML: attributes => {
+          if (!attributes.width) return {};
+          return { width: attributes.width };
+        },
+      },
+      height: {
+        default: null,
+        parseHTML: element => element.getAttribute('height'),
+        renderHTML: attributes => {
+          if (!attributes.height) return {};
+          return { height: attributes.height };
+        },
+      },
+    };
+  },
+  
+  addNodeView() {
+    return ReactNodeViewRenderer(ResizableImageView);
+  },
+});
 import Placeholder from "@tiptap/extension-placeholder";
 import Link from "@tiptap/extension-link";
 import Heading from "@tiptap/extension-heading";
@@ -37,11 +68,10 @@ export function useTiptapEditor(
     extensions: [
       StarterKit.configure({
         heading: false,
-        link: false,
         bulletList: false,
         orderedList: false,
         listItem: false,
-        strike: false, // Disable strike to avoid conflicts
+        strike: false,
       }),
 
       Heading.configure({ levels: [1, 2, 3] }),
@@ -76,7 +106,13 @@ export function useTiptapEditor(
         },
       }),
 
-      Image.configure({ allowBase64: true }),
+      ResizableImage.configure({ 
+        allowBase64: true,
+        inline: false,
+        HTMLAttributes: {
+          class: 'resizable-image',
+        },
+      }),
       Placeholder.configure({
         placeholder: "Start writing your note...",
       }),

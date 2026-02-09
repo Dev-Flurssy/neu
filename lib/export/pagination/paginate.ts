@@ -79,6 +79,39 @@ function splitBlock(
 }
 
 /* -------------------------
+   LIST SPLITTING
+-------------------------- */
+function splitList(
+  list: HTMLElement,
+  maxHeight: number,
+): { firstList: HTMLElement; secondList: HTMLElement | null } {
+  const tag = list.tagName.toLowerCase();
+  const l1 = document.createElement(tag) as HTMLElement;
+  const l2 = document.createElement(tag) as HTMLElement;
+
+  // Copy attributes
+  Array.from(list.attributes).forEach(attr => {
+    l1.setAttribute(attr.name, attr.value);
+    l2.setAttribute(attr.name, attr.value);
+  });
+
+  const items = Array.from(list.children);
+
+  for (let i = 0; i < items.length; i++) {
+    l1.appendChild(items[i].cloneNode(true));
+
+    const h = l1.getBoundingClientRect().height;
+    if (h > maxHeight) {
+      l1.removeChild(l1.lastChild!);
+      items.slice(i).forEach((item) => l2.appendChild(item.cloneNode(true)));
+      return { firstList: l1, secondList: l2 };
+    }
+  }
+
+  return { firstList: list, secondList: null };
+}
+
+/* -------------------------
    TABLE SPLITTING
 -------------------------- */
 function splitTable(
@@ -130,15 +163,27 @@ function applyListContinuation(domPages: HTMLDivElement[]): void {
 
     if (!prevLast || !currFirst) continue;
 
-    const endedWithList =
-      prevLast.tagName.toLowerCase() === "li" || !!prevLast.querySelector("li");
+    const prevIsListOrContainsList =
+      ["ul", "ol"].includes(prevLast.tagName.toLowerCase()) ||
+      !!prevLast.querySelector("ul, ol");
 
-    const startsWithList =
-      currFirst.tagName.toLowerCase() === "li" ||
-      !!currFirst.querySelector("li");
+    const currIsListOrContainsList =
+      ["ul", "ol"].includes(currFirst.tagName.toLowerCase()) ||
+      !!currFirst.querySelector("ul, ol");
 
-    if (endedWithList && startsWithList) {
-      currFirst.classList.add("list-continuation");
+    // Check if both are the same type of list
+    if (prevIsListOrContainsList && currIsListOrContainsList) {
+      const prevListTag = prevLast.tagName.toLowerCase() === "ul" || prevLast.tagName.toLowerCase() === "ol" 
+        ? prevLast.tagName.toLowerCase() 
+        : (prevLast.querySelector("ul") ? "ul" : "ol");
+      
+      const currListTag = currFirst.tagName.toLowerCase() === "ul" || currFirst.tagName.toLowerCase() === "ol"
+        ? currFirst.tagName.toLowerCase()
+        : (currFirst.querySelector("ul") ? "ul" : "ol");
+
+      if (prevListTag === currListTag) {
+        currFirst.classList.add("list-continuation");
+      }
     }
   }
 }
@@ -209,7 +254,8 @@ export async function paginateBlocks(
     currentHeight = 0;
   }
 
-  for (const block of blocks) {
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
     const wrapper = document.createElement("div");
     wrapper.innerHTML = block.html;
 
@@ -231,6 +277,92 @@ export async function paginateBlocks(
     const content = currentPage.querySelector(
       ".page-content",
     ) as HTMLDivElement;
+
+    /* HEADING ORPHAN PREVENTION */
+    // If this is a heading, check if we should move it to next page
+    if (block.type === "heading") {
+      const nextBlock = blocks[i + 1];
+      
+      if (nextBlock) {
+        // Minimum content height to keep with heading (about 1-2 lines)
+        const minContentHeight = 50;
+        
+        // Only apply orphan prevention if the next block is NOT an image
+        // Images can be moved to next page without looking bad
+        if (nextBlock.type !== 'image') {
+          const headingFits = currentHeight + height <= pageHeight;
+          const contentFits = currentHeight + height + minContentHeight <= pageHeight;
+          
+          if (headingFits && !contentFits) {
+            // Heading would fit but content wouldn't - move heading to next page
+            startNewPage();
+            // After starting new page, currentHeight is reset to 0
+          }
+        }
+      }
+    }
+
+    /* IMAGE HANDLING */
+    if (block.type === "image") {
+      // Check if image fits on current page
+      if (currentHeight + height > pageHeight) {
+        // Image doesn't fit, check if we should scale it down or move to next page
+        const availableHeight = pageHeight - currentHeight;
+        
+        // If there's at least 200px available, try to fit the image by scaling
+        if (availableHeight >= 200 && height > availableHeight) {
+          // Scale image to fit available space
+          const img = element.querySelector('img');
+          if (img) {
+            const scale = availableHeight / height;
+            img.style.maxHeight = `${availableHeight}px`;
+            img.style.width = 'auto';
+            img.style.height = 'auto';
+            
+            // Re-measure after scaling
+            workerRoot.appendChild(element);
+            const newRect = element.getBoundingClientRect();
+            const newHeight = newRect.height;
+            workerRoot.removeChild(element);
+            
+            // If scaled image fits, use it
+            if (currentHeight + newHeight <= pageHeight) {
+              content.appendChild(element);
+              currentHeight += newHeight;
+              currentLogicalPage.blocks.push(block);
+              continue;
+            }
+          }
+        }
+        
+        // Image still doesn't fit or not enough space, move to next page
+        startNewPage();
+      }
+    }
+
+    /* LIST SPLITTING */
+    if (block.type === "list") {
+      if (currentHeight + height > pageHeight) {
+        const remaining = pageHeight - currentHeight;
+
+        const { firstList, secondList } = splitList(
+          element as HTMLElement,
+          remaining,
+        );
+
+        content.appendChild(firstList);
+        currentLogicalPage.blocks.push(block);
+
+        if (secondList && secondList.children.length > 0) {
+          startNewPage();
+          const newContent = currentPage.querySelector(".page-content")!;
+          newContent.appendChild(secondList);
+          currentLogicalPage.blocks.push(block);
+        }
+
+        continue;
+      }
+    }
 
     /* TABLE SPLITTING */
     if (block.type === "table") {

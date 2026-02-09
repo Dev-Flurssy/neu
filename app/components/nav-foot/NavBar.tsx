@@ -9,23 +9,9 @@ const NavBar = () => {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [open, setOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    const checkAdmin = async () => {
-      if (session?.user?.email) {
-        try {
-          const res = await fetch("/api/admin/stats");
-          // 403 means not admin, which is expected for regular users
-          setIsAdmin(res.ok && res.status === 200);
-        } catch {
-          // Silently fail - user is not admin
-          setIsAdmin(false);
-        }
-      }
-    };
-    checkAdmin();
-  }, [session]);
+  
+  // Check if user is admin from session
+  const isAdmin = session?.user?.role === 'admin';
 
   const links = session
     ? [

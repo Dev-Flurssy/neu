@@ -99,24 +99,16 @@ export function parseHtmlToBlocks(html: string): SimpleBlock[] {
       continue;
     }
 
-    // LISTS → convert each <li> into its own block
+    // LISTS → keep as complete block
     if (tag === "ul" || tag === "ol") {
-      const items = Array.from(el.querySelectorAll(":scope > li"));
-
-      for (const li of items) {
-        if (!li.textContent?.trim()) continue;
-
-        blocks.push({
-          id: `block-${index++}`,
-          type: "list-item",
-          html: li.outerHTML,
-          meta: {
-            layout: extractLayoutModel(li as HTMLElement),
-            inline: extractInlineRuns(li as HTMLElement),
-          },
-        });
-      }
-
+      blocks.push({
+        id: `block-${index++}`,
+        type: "list",
+        html: el.outerHTML,
+        meta: {
+          layout: extractLayoutModel(el as HTMLElement),
+        },
+      });
       continue;
     }
 
