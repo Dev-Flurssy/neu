@@ -75,13 +75,30 @@ export default function PdfPreview({ html }: { html: string }) {
   }, [html, css]);
 
   return (
-    <div className="document-preview">
+    <div className="document-preview responsive-preview">
       {loading && (
         <div className="flex items-center justify-center py-8">
           <div className="text-gray-500 text-sm">Loading preview...</div>
         </div>
       )}
       <div ref={ref} className="page-stack" />
+      
+      {/* Responsive hint for mobile users */}
+      <style jsx>{`
+        @media (max-width: 767px) {
+          .responsive-preview::before {
+            content: "📱 Mobile Preview - Scroll to view pages";
+            display: block;
+            text-align: center;
+            padding: 10px;
+            background: #f0f0f0;
+            color: #666;
+            font-size: 12px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+          }
+        }
+      `}</style>
     </div>
   );
 }

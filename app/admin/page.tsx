@@ -118,6 +118,10 @@ export default function AdminPage() {
 
       if (res.ok) {
         fetchData();
+        // If the user changed their own role, refresh the page to update session
+        if (session?.user?.id === userId) {
+          window.location.reload();
+        }
       } else {
         alert("Failed to update user role");
       }

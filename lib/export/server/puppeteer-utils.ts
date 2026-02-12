@@ -18,16 +18,26 @@ export async function launchBrowser(): Promise<Browser> {
 /**
  * Wait for all images in the page to load
  */
-export async function waitForImages(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    return Promise.all(
-      Array.from(document.images)
-        .filter(img => !img.complete)
-        .map(img => new Promise(resolve => {
-          img.onload = img.onerror = resolve;
-        }))
-    );
-  });
+export async function waitForImages(page: Page, timeout: number = 60000): Promise<void> {
+  try {
+    await Promise.race([
+      page.evaluate(() => {
+        return Promise.all(
+          Array.from(document.images)
+            .filter(img => !img.complete)
+            .map(img => new Promise(resolve => {
+              img.onload = img.onerror = resolve;
+            }))
+        );
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Image loading timeout')), timeout)
+      )
+    ]);
+  } catch (err) {
+    console.warn('Image loading timeout or error:', err);
+    // Continue anyway - some images might have loaded
+  }
 }
 
 /**

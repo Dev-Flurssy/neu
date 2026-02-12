@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { GoogleIcon } from "@/app/components/icons/GoogleIcon";
 import AuthSkeleton from "@/app/components/auth/AuthSkeleton";
+import AuthLoadingSpinner from "@/app/components/loading/AuthLoadingSpinner";
 
 const SignupPage = () => {
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
   const [error, setError] = useState("");
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -37,8 +39,11 @@ const SignupPage = () => {
     checkRoleAndRedirect();
   }, [status, session, router]);
 
-  // Show loading while checking session or during signup
-  if (status === "loading" || loading) return <AuthSkeleton />;
+  // Show loading while checking session
+  if (status === "loading") return <AuthSkeleton />;
+  
+  // Show custom loading spinner during signup
+  if (loading) return <AuthLoadingSpinner message={loadingMessage} />;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-blue-50 px-4 py-12">
@@ -80,6 +85,7 @@ const SignupPage = () => {
             onClick={async () => {
               try {
                 setLoading(true);
+                setLoadingMessage("Signing up with Google...");
                 setError("");
                 await signIn("google", { callbackUrl: "/dashboard" });
               } catch (err: any) {
@@ -108,6 +114,7 @@ const SignupPage = () => {
 
               try {
                 setLoading(true);
+                setLoadingMessage("Creating your account...");
                 setError("");
 
                 // Validate password
@@ -125,16 +132,31 @@ const SignupPage = () => {
                   }),
                 });
 
+                const data = await res.json();
+
                 if (!res.ok) {
-                  const data = await res.json();
                   throw new Error(data.error || "Could not create account");
                 }
 
-                await signIn("credentials", {
-                  email: form.email.value,
-                  password: form.password.value,
-                  callbackUrl: "/dashboard",
-                });
+                // In dev mode, show the verification code
+                if (data.devCode) {
+                  console.log("🔑 DEV MODE - Verification Code:", data.devCode);
+                  alert(`DEV MODE: Your verification code is ${data.devCode}`);
+                }
+
+                setLoadingMessage("Redirecting to verification...");
+
+                // Redirect to verification page
+                if (data.requiresVerification) {
+                  router.push(`/verify-email?email=${encodeURIComponent(form.email.value)}`);
+                } else {
+                  // Fallback: auto-login if verification not required
+                  await signIn("credentials", {
+                    email: form.email.value,
+                    password: form.password.value,
+                    callbackUrl: "/dashboard",
+                  });
+                }
               } catch (err: any) {
                 setError(err.message || "Failed to create account");
                 setLoading(false);

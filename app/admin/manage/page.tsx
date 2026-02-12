@@ -70,7 +70,21 @@ export default function AdminManagePage() {
     setPromoteLoading(true);
 
     try {
-      const res = await fetch(`/api/admin/users/${promoteEmail}`, {
+      // First, find the user by email
+      const usersRes = await fetch("/api/admin/users");
+      if (!usersRes.ok) {
+        throw new Error("Failed to fetch users");
+      }
+      
+      const usersData = await usersRes.json();
+      const user = usersData.users.find((u: any) => u.email === promoteEmail);
+      
+      if (!user) {
+        throw new Error("User not found with that email address");
+      }
+
+      // Now update the user's role using their ID
+      const res = await fetch(`/api/admin/users/${user.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: "admin" }),

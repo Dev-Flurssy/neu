@@ -54,15 +54,33 @@ export async function POST(req: Request) {
       },
     });
 
-    // Send email
-    await sendEmail({
-      to: email,
-      subject: "Verify Your Email - NEU Notes",
-      html: generateVerificationEmail(code, user.name || undefined),
-    });
+    // Send email (skip in dev if EMAIL_ENABLED is false)
+    const shouldSendEmail = process.env.NODE_ENV === "production" || process.env.EMAIL_ENABLED === "true";
+    
+    if (shouldSendEmail) {
+      await sendEmail({
+        to: email,
+        subject: "Verify Your Email - NEU Notes",
+        html: generateVerificationEmail(code, user.name || undefined),
+      });
+    } else {
+      console.log("📧 Email sending disabled in development");
+    }
+
+    // In development, log the verification code
+    if (process.env.NODE_ENV === "development") {
+      console.log("\n=================================");
+      console.log("📧 VERIFICATION CODE (DEV MODE)");
+      console.log("=================================");
+      console.log(`Email: ${email}`);
+      console.log(`Code: ${code}`);
+      console.log("=================================\n");
+    }
 
     return NextResponse.json({
       message: "Verification code sent to your email",
+      // Include code in dev mode for easy testing
+      ...(process.env.NODE_ENV === "development" && { devCode: code })
     });
   } catch (error) {
     console.error("Send verification error:", error);

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { launchBrowser, waitForImages, closeBrowser } from "@/lib/export/server/puppeteer-utils";
-import { createPdfHtmlWithPagination } from "@/lib/export/server/html-templates";
+import { createPdfHtml } from "@/lib/export/server/html-templates";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -15,12 +15,13 @@ export async function POST(req: Request) {
       return new NextResponse("Missing HTML", { status: 400 });
     }
 
-    const fullHtml = createPdfHtmlWithPagination(title, html);
+    // Use simple PDF HTML without JS pagination - let Puppeteer handle page breaks
+    const fullHtml = createPdfHtml(title, html);
 
     browser = await launchBrowser();
     const page = await browser.newPage();
     
-    // Set viewport to match preview rendering
+    // Set viewport to match A4 dimensions
     await page.setViewport({
       width: 794,
       height: 1123,
@@ -34,13 +35,8 @@ export async function POST(req: Request) {
 
     await waitForImages(page);
 
-    // Wait for pagination to complete
-    await page.waitForFunction(() => (window as any).__done === true, {
-      timeout: 30000,
-    });
-
     // Small delay to ensure rendering is complete
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     const pdfBuffer = await page.pdf({
       format: "A4",
@@ -51,6 +47,7 @@ export async function POST(req: Request) {
         left: "20mm",
         right: "20mm",
       },
+      preferCSSPageSize: false,
     });
 
     await browser.close();

@@ -38,7 +38,12 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ user }) {
+      // Allow sign in
+      return true;
+    },
+
+    async jwt({ token, user, trigger }) {
       // Attach user ID and role on first login
       if (user) {
         token.sub = user.id;
@@ -49,6 +54,19 @@ export const authOptions: NextAuthOptions = {
         });
         token.role = dbUser?.role || 'user';
       }
+      
+      // Only refresh role from database when explicitly triggered (not on every request)
+      // This improves performance significantly
+      else if (token.sub && trigger === "update") {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.sub },
+          select: { role: true },
+        });
+        if (dbUser) {
+          token.role = dbUser.role;
+        }
+      }
+      
       return token;
     },
 
@@ -58,6 +76,19 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as string;
       }
       return session;
+    },
+
+    async redirect({ url, baseUrl }) {
+      // After sign in, check if URL contains a callbackUrl
+      if (url.startsWith(baseUrl)) {
+        return url;
+      }
+      // If relative URL, prepend baseUrl
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+      // Default to baseUrl
+      return baseUrl;
     },
   },
 

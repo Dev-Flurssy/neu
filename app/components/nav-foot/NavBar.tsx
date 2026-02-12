@@ -71,8 +71,9 @@ const NavBar = () => {
                   key={link.href}
                   href={link.href}
                   aria-current={isActive ? "page" : undefined}
+                  title={link.label}
                   className={`
-                    px-4 py-2 text-base font-medium rounded-lg transition-all
+                    group relative px-4 py-2 text-base font-medium rounded-lg transition-all
                     ${
                       isActive
                         ? "bg-blue-50 text-blue-700 shadow-sm"
@@ -82,7 +83,11 @@ const NavBar = () => {
                 >
                   <span className="flex items-center gap-2">
                     {link.icon}
-                    <span>{link.label}</span>
+                    <span className="hidden lg:inline">{link.label}</span>
+                  </span>
+                  {/* Tooltip for tablet/mini-laptop */}
+                  <span className="lg:hidden absolute left-1/2 -translate-x-1/2 top-full mt-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                    {link.label}
                   </span>
                 </Link>
               );
@@ -113,16 +118,24 @@ const NavBar = () => {
                   <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-base font-semibold">
                     {(session.user?.name?.[0] || session.user?.email?.[0] || "U").toUpperCase()}
                   </div>
-                  <span className="text-base font-medium text-gray-700 max-w-[150px] truncate">
+                  <span className="hidden lg:inline text-base font-medium text-gray-700 max-w-[150px] truncate">
                     {session.user?.name || session.user?.email}
                   </span>
                 </div>
 
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
-                  className="px-5 py-2 text-base font-medium text-red-600 hover:bg-red-50 rounded-lg transition"
+                  title="Logout"
+                  className="group relative px-5 py-2 text-base font-medium text-red-600 hover:bg-red-50 rounded-lg transition flex items-center gap-2"
                 >
-                  Logout
+                  <svg className="w-5 h-5 lg:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span className="hidden lg:inline">Logout</span>
+                  {/* Tooltip for tablet */}
+                  <span className="lg:hidden absolute left-1/2 -translate-x-1/2 top-full mt-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                    Logout
+                  </span>
                 </button>
               </>
             )}

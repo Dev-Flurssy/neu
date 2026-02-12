@@ -168,51 +168,100 @@ async function buildImage(block: LayoutBlock) {
   try {
     const img = block.meta.image!;
     
+    if (!img || !img.src) {
+      console.warn('DOCX: No image source found in block');
+      return new Paragraph({ text: "[No image source]" });
+    }
+    
+    console.log('DOCX: Building image with dimensions:', img.width, 'x', img.height);
+    console.log('DOCX: Image source type:', img.src.startsWith('data:') ? 'base64' : 'url');
+    
     // Handle base64 images
-    let buffer: Uint8Array;
+    let buffer: Buffer;
     let imageType: "png" | "jpg" | "gif" = "png";
     
     if (img.src.startsWith("data:")) {
       // Extract base64 data
       const matches = img.src.match(/^data:image\/(png|jpeg|jpg|gif);base64,(.+)$/);
       if (!matches) {
-        console.warn("Invalid base64 image format");
+        console.error("DOCX: Invalid base64 image format:", img.src.substring(0, 100));
         return new Paragraph({ text: "[Invalid image format]" });
       }
       
       imageType = matches[1] === "jpeg" ? "jpg" : matches[1] as "png" | "jpg" | "gif";
       const base64Data = matches[2];
-      buffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+      
+      // Validate base64 data
+      if (!base64Data || base64Data.length < 100) {
+        console.error("DOCX: Base64 data too short or empty");
+        return new Paragraph({ text: "[Invalid image data]" });
+      }
+      
+      try {
+        buffer = Buffer.from(base64Data, 'base64');
+        console.log('DOCX: Successfully decoded base64 image, buffer size:', buffer.length);
+      } catch (err) {
+        console.error("DOCX: Failed to decode base64:", err);
+        return new Paragraph({ text: "[Failed to decode image]" });
+      }
     } else {
       // Fetch external image
-      const res = await fetch(img.src);
-      if (!res.ok) {
-        console.warn(`Failed to fetch image: ${img.src}`);
-        return new Paragraph({ text: "[Image not available]" });
+      try {
+        const res = await fetch(img.src);
+        if (!res.ok) {
+          console.warn(`DOCX: Failed to fetch image: ${img.src}, status: ${res.status}`);
+          return new Paragraph({ text: "[Image not available]" });
+        }
+        
+        // Determine type from URL or content-type
+        const contentType = res.headers.get("content-type");
+        if (contentType?.includes("jpeg") || img.src.includes(".jpg") || img.src.includes(".jpeg")) {
+          imageType = "jpg";
+        } else if (contentType?.includes("gif") || img.src.includes(".gif")) {
+          imageType = "gif";
+        }
+        
+        buffer = Buffer.from(await res.arrayBuffer());
+        console.log('DOCX: Successfully fetched external image, buffer size:', buffer.length);
+      } catch (err) {
+        console.error("DOCX: Failed to fetch external image:", err);
+        return new Paragraph({ text: "[Failed to load image]" });
       }
-      
-      // Determine type from URL or content-type
-      const contentType = res.headers.get("content-type");
-      if (contentType?.includes("jpeg") || img.src.includes(".jpg") || img.src.includes(".jpeg")) {
-        imageType = "jpg";
-      } else if (contentType?.includes("gif") || img.src.includes(".gif")) {
-        imageType = "gif";
-      }
-      
-      buffer = new Uint8Array(await res.arrayBuffer());
     }
 
-    // Calculate proper dimensions
-    const maxWidthTwips = 11906 - (2 * pxToTwip(80)); // Page width - margins
-    let widthTwips = pxToTwip(img.width || 400);
-    let heightTwips = pxToTwip(img.height || 300);
-    
-    // Scale down if too wide
-    if (widthTwips > maxWidthTwips) {
-      const scale = maxWidthTwips / widthTwips;
-      widthTwips = maxWidthTwips;
-      heightTwips = Math.round(heightTwips * scale);
+    // Validate buffer
+    if (!buffer || buffer.length === 0) {
+      console.error("DOCX: Image buffer is empty");
+      return new Paragraph({ text: "[Empty image data]" });
     }
+
+    // Get image dimensions (use actual dimensions if available, otherwise defaults)
+    let imageWidth = img.width || 400;
+    let imageHeight = img.height || 300;
+    
+    console.log('DOCX: Original dimensions:', imageWidth, 'x', imageHeight);
+    
+    // Calculate max width in pixels (A4 width - margins)
+    // A4 width: 8.27 inches = 794 pixels at 96 DPI
+    // Margins: 80px on each side
+    const maxWidthPx = 794 - (2 * 80); // 634px
+    
+    // Scale down if too wide, maintaining aspect ratio
+    if (imageWidth > maxWidthPx) {
+      const scale = maxWidthPx / imageWidth;
+      imageWidth = maxWidthPx;
+      imageHeight = Math.round(imageHeight * scale);
+    }
+    
+    // Also limit height to reasonable size (max 600px)
+    const maxHeightPx = 600;
+    if (imageHeight > maxHeightPx) {
+      const scale = maxHeightPx / imageHeight;
+      imageHeight = maxHeightPx;
+      imageWidth = Math.round(imageWidth * scale);
+    }
+    
+    console.log('DOCX: Final dimensions:', imageWidth, 'x', imageHeight);
 
     return new Paragraph({
       children: [
@@ -220,8 +269,8 @@ async function buildImage(block: LayoutBlock) {
           data: buffer,
           type: imageType,
           transformation: {
-            width: Math.round(widthTwips / 15), // Convert twips to pixels
-            height: Math.round(heightTwips / 15),
+            width: imageWidth,
+            height: imageHeight,
           },
         }),
       ],
@@ -232,7 +281,7 @@ async function buildImage(block: LayoutBlock) {
       alignment: AlignmentType.CENTER,
     });
   } catch (err) {
-    console.error("Error building image:", err);
+    console.error("DOCX: Error building image:", err);
     return new Paragraph({ text: "[Image could not be loaded]" });
   }
 }

@@ -22,12 +22,14 @@ export async function POST(req: Request) {
     browser = await launchBrowser();
     const page = await browser.newPage();
 
+    // Use domcontentloaded for faster loading
     await page.setContent(fullHtml, { 
-      waitUntil: "networkidle0",
-      timeout: 120000
+      waitUntil: "domcontentloaded",
+      timeout: 30000
     });
 
-    await waitForImages(page);
+    // Wait for images with timeout
+    await waitForImages(page, 10000);
 
     const blocks = await extractBlocks(page);
 

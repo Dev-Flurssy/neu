@@ -24,5 +24,10 @@ export async function authorizeCredentials(credentials: unknown) {
     throw new Error("Invalid email or password");
   }
 
+  // Check if email is verified (skip for admin users)
+  if (!user.emailVerified && user.role !== "admin") {
+    throw new Error("Please verify your email before logging in. Check your inbox for the verification code.");
+  }
+
   return user;
 }

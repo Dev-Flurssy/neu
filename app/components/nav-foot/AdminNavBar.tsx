@@ -72,7 +72,8 @@ const AdminNavBar = () => {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                title={link.label}
+                className={`group relative flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
                   pathname === link.href || (link.href.includes('#') && pathname === '/admin')
                     ? "bg-white/20 backdrop-blur font-semibold"
                     : "hover:bg-white/10"
@@ -80,20 +81,28 @@ const AdminNavBar = () => {
               >
                 {link.icon}
                 <span className="hidden lg:inline">{link.label}</span>
+                {/* Tooltip for tablet/mini-laptop */}
+                <span className="lg:hidden absolute left-1/2 -translate-x-1/2 top-full mt-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                  {link.label}
+                </span>
               </Link>
             ))}
 
             {/* User Menu */}
             <div className="ml-4 pl-4 border-l border-white/20 flex items-center gap-3">
               <Link
-                href="/dashboard"
-                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition"
+                href="/dashboard?view=user"
                 title="Back to User Dashboard"
+                className="group relative flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
                 <span className="hidden lg:inline">User View</span>
+                {/* Tooltip for tablet */}
+                <span className="lg:hidden absolute left-1/2 -translate-x-1/2 top-full mt-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                  User View
+                </span>
               </Link>
 
               <div className="flex items-center gap-2">
@@ -104,12 +113,17 @@ const AdminNavBar = () => {
                 </div>
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
-                  className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition flex items-center gap-2"
+                  title="Logout"
+                  className="group relative px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition flex items-center gap-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
                   <span className="hidden lg:inline">Logout</span>
+                  {/* Tooltip for tablet */}
+                  <span className="lg:hidden absolute left-1/2 -translate-x-1/2 top-full mt-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                    Logout
+                  </span>
                 </button>
               </div>
             </div>
@@ -152,7 +166,7 @@ const AdminNavBar = () => {
 
               <div className="pt-4 mt-4 border-t border-white/20 space-y-2">
                 <Link
-                  href="/dashboard"
+                  href="/dashboard?view=user"
                   onClick={() => setOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 bg-white/10 hover:bg-white/20 rounded-lg transition"
                 >

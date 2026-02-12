@@ -101,9 +101,10 @@ export async function extractBlocks(page: Page): Promise<any[]> {
         continue;
       }
 
-      // IMAGES
+      // IMAGES (check both direct img tags and imgs inside paragraphs)
       if (tag === "img") {
         const img = el as HTMLImageElement;
+        console.log('Found direct image:', img.src.substring(0, 50), img.width, img.height);
         blocks.push({
           id: `block-${index++}`,
           type: "image",
@@ -118,6 +119,29 @@ export async function extractBlocks(page: Page): Promise<any[]> {
           },
         });
         continue;
+      }
+
+      // Check if paragraph contains only an image
+      if (tag === "p") {
+        const imgInP = el.querySelector("img");
+        if (imgInP && el.children.length === 1) {
+          const img = imgInP as HTMLImageElement;
+          console.log('Found image in paragraph:', img.src.substring(0, 50), img.width, img.height);
+          blocks.push({
+            id: `block-${index++}`,
+            type: "image",
+            html: img.outerHTML,
+            meta: {
+              layout: extractLayoutModel(img as HTMLElement),
+              image: {
+                src: img.src,
+                width: img.width || img.naturalWidth,
+                height: img.height || img.naturalHeight,
+              },
+            },
+          });
+          continue;
+        }
       }
 
       // TABLES

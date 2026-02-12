@@ -23,12 +23,14 @@ export async function POST(req: Request) {
     browser = await launchBrowser();
     const page = await browser.newPage();
 
+    // Use domcontentloaded instead of networkidle0 - faster and sufficient for block extraction
     await page.setContent(fullHtml, { 
-      waitUntil: "networkidle0",
-      timeout: 120000
+      waitUntil: "domcontentloaded",
+      timeout: 30000
     });
 
-    await waitForImages(page);
+    // Wait for images to load with a 10 second timeout
+    await waitForImages(page, 10000);
 
     const blocks = await extractBlocks(page);
 

@@ -115,11 +115,11 @@ export function DashboardView({ notes, loading, error }: DashboardViewProps) {
                 </div>
                 
                 <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-                  Welcome to Your Note Space! 🎉
+                  Welcome to NEU Note Generator
                 </h2>
                 
                 <p className="text-lg text-gray-700 mb-8 max-w-2xl mx-auto leading-relaxed">
-                  You're all set to start your learning journey. Create your first note and experience the power of AI-assisted note-taking.
+                  No notes yet? No worries! Click the button below to start generating your notes with AI assistance.
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10 max-w-3xl mx-auto">
@@ -161,7 +161,7 @@ export function DashboardView({ notes, loading, error }: DashboardViewProps) {
                   <svg className="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                  Create Your First Note
+                  Start Generating Notes
                   <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>

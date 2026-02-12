@@ -304,40 +304,80 @@ export async function paginateBlocks(
 
     /* IMAGE HANDLING */
     if (block.type === "image") {
+      const img = element.querySelector('img');
+      
+      // If image has no height, it might not have loaded - skip it with placeholder
+      if (height === 0 || !img || !img.complete || img.naturalWidth === 0) {
+        console.warn('Image failed to load or has no dimensions');
+        const placeholder = document.createElement('p');
+        placeholder.textContent = '[Image]';
+        placeholder.style.color = '#999';
+        placeholder.style.fontStyle = 'italic';
+        content.appendChild(placeholder);
+        currentHeight += 20;
+        currentLogicalPage.blocks.push(block);
+        continue;
+      }
+      
       // Check if image fits on current page
       if (currentHeight + height > pageHeight) {
-        // Image doesn't fit, check if we should scale it down or move to next page
-        const availableHeight = pageHeight - currentHeight;
+        // Image doesn't fit, move to next page
+        startNewPage();
+        const newContent = currentPage.querySelector(".page-content") as HTMLDivElement;
         
-        // If there's at least 200px available, try to fit the image by scaling
-        if (availableHeight >= 200 && height > availableHeight) {
-          // Scale image to fit available space
-          const img = element.querySelector('img');
-          if (img) {
-            const scale = availableHeight / height;
-            img.style.maxHeight = `${availableHeight}px`;
-            img.style.width = 'auto';
-            img.style.height = 'auto';
-            
-            // Re-measure after scaling
-            workerRoot.appendChild(element);
-            const newRect = element.getBoundingClientRect();
-            const newHeight = newRect.height;
-            workerRoot.removeChild(element);
-            
-            // If scaled image fits, use it
-            if (currentHeight + newHeight <= pageHeight) {
-              content.appendChild(element);
-              currentHeight += newHeight;
-              currentLogicalPage.blocks.push(block);
-              continue;
-            }
-          }
+        // Re-check if image is taller than a full page
+        if (height > pageHeight) {
+          // Image is taller than page height, scale it down
+          const maxImageHeight = pageHeight * 0.9;
+          img.style.maxHeight = `${maxImageHeight}px`;
+          img.style.width = 'auto';
+          img.style.height = 'auto';
+          
+          // Re-measure after scaling
+          workerRoot.appendChild(element);
+          await waitForImages(element);
+          const newRect = element.getBoundingClientRect();
+          const newHeight = newRect.height;
+          workerRoot.removeChild(element);
+          
+          // Use the scaled image
+          newContent.appendChild(element);
+          currentHeight = newHeight;
+          currentLogicalPage.blocks.push(block);
+          continue;
         }
         
-        // Image still doesn't fit or not enough space, move to next page
-        startNewPage();
+        // Image fits on new page, add it
+        newContent.appendChild(element);
+        currentHeight = height;
+        currentLogicalPage.blocks.push(block);
+        continue;
+      } else if (height > pageHeight * 0.9) {
+        // Image fits but is very tall (>90% of page), scale it down for better layout
+        const maxImageHeight = pageHeight * 0.85;
+        img.style.maxHeight = `${maxImageHeight}px`;
+        img.style.width = 'auto';
+        img.style.height = 'auto';
+        
+        // Re-measure after scaling
+        workerRoot.appendChild(element);
+        await waitForImages(element);
+        const newRect = element.getBoundingClientRect();
+        const newHeight = newRect.height;
+        workerRoot.removeChild(element);
+        
+        // Use the scaled image
+        content.appendChild(element);
+        currentHeight += newHeight;
+        currentLogicalPage.blocks.push(block);
+        continue;
       }
+      
+      // Image fits normally, add it
+      content.appendChild(element);
+      currentHeight += height;
+      currentLogicalPage.blocks.push(block);
+      continue;
     }
 
     /* LIST SPLITTING */

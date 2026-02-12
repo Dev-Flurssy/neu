@@ -8,7 +8,7 @@ export async function middleware(req: NextRequest) {
     secret: process.env.NEXTAUTH_SECRET,
   });
 
-  const { pathname } = req.nextUrl;
+  const { pathname, searchParams } = req.nextUrl;
 
   const protectedRoutes =
     pathname.startsWith("/dashboard") || 
@@ -17,6 +17,20 @@ export async function middleware(req: NextRequest) {
 
   if (protectedRoutes && !token) {
     return NextResponse.redirect(new URL("/login", req.url));
+  }
+
+  // Allow admins to access dashboard if they have the 'view' parameter
+  // This lets them click "User View" from admin panel
+  const allowUserView = searchParams.get("view") === "user";
+
+  // Redirect admins from /dashboard to /admin (unless explicitly viewing as user)
+  if (pathname === "/dashboard" && token?.role === "admin" && !allowUserView) {
+    return NextResponse.redirect(new URL("/admin", req.url));
+  }
+
+  // Prevent non-admins from accessing admin routes
+  if (pathname.startsWith("/admin") && token?.role !== "admin") {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
   return NextResponse.next();

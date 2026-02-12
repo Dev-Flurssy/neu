@@ -16,6 +16,79 @@
   position: relative;
 }
 
+/* Responsive Preview Styles */
+
+/* Large Desktop (default - full A4 size) */
+@media (min-width: 1400px) {
+  .pdf-preview-page {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 20mm 20mm 25mm 20mm;
+  }
+}
+
+/* Desktop (slightly scaled down) */
+@media (max-width: 1399px) and (min-width: 1024px) {
+  .pdf-preview-page {
+    width: 180mm;
+    min-height: 254mm;
+    padding: 18mm 18mm 22mm 18mm;
+  }
+}
+
+/* Tablet Landscape & Small Desktop */
+@media (max-width: 1023px) and (min-width: 768px) {
+  .pdf-preview-wrapper {
+    padding: 20px 10px;
+  }
+  
+  .pdf-preview-page {
+    width: 95%;
+    max-width: 700px;
+    min-height: auto;
+    padding: 15mm 15mm 20mm 15mm;
+  }
+}
+
+/* Tablet Portrait */
+@media (max-width: 767px) and (min-width: 481px) {
+  .pdf-preview-wrapper {
+    padding: 15px 10px;
+    background: #f5f5f5;
+  }
+  
+  .pdf-preview-page {
+    width: 100%;
+    max-width: 100%;
+    min-height: auto;
+    padding: 12mm 12mm 15mm 12mm;
+    margin: 0 auto 15px auto;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .pdf-preview-wrapper {
+    padding: 10px 5px;
+    background: #f5f5f5;
+  }
+  
+  .pdf-preview-page {
+    width: 100%;
+    max-width: 100%;
+    min-height: auto;
+    padding: 10mm 8mm 12mm 8mm;
+    margin: 0 auto 10px auto;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+  
+  .pdf-page-number {
+    font-size: 8pt;
+    bottom: 8mm;
+  }
+}
+
 .pdf-page-number {
   position: absolute;
   bottom: 10mm;
@@ -33,9 +106,68 @@
   color: #111;
 }
 
+/* Responsive Typography */
+@media (max-width: 767px) {
+  .pdf-preview-content {
+    font-size: 10pt;
+    line-height: 1.5;
+  }
+  
+  .pdf-preview-content h1 {
+    font-size: 20pt !important;
+  }
+  
+  .pdf-preview-content h2 {
+    font-size: 16pt !important;
+  }
+  
+  .pdf-preview-content h3 {
+    font-size: 13pt !important;
+  }
+  
+  .pdf-preview-content table {
+    font-size: 9pt;
+  }
+  
+  .pdf-preview-content th,
+  .pdf-preview-content td {
+    padding: 4pt;
+  }
+}
+
+@media (max-width: 480px) {
+  .pdf-preview-content {
+    font-size: 9pt;
+  }
+  
+  .pdf-preview-content h1 {
+    font-size: 18pt !important;
+    margin: 16pt 0 8pt 0 !important;
+  }
+  
+  .pdf-preview-content h2 {
+    font-size: 14pt !important;
+    margin: 12pt 0 8pt 0 !important;
+  }
+  
+  .pdf-preview-content h3 {
+    font-size: 12pt !important;
+    margin: 10pt 0 6pt 0 !important;
+  }
+  
+  .pdf-preview-content ul,
+  .pdf-preview-content ol {
+    padding-left: 20pt;
+  }
+  
+  .pdf-preview-content table {
+    font-size: 8pt;
+  }
+}
+
 .pdf-preview-content h1 {
   font-size: 24pt;
-  margin: 20pt 0 10pt 0;
+  margin: 20pt 0 8pt 0;
   font-weight: 700;
   color: #000;
 }
@@ -51,20 +183,20 @@
 
 .pdf-preview-content h2 {
   font-size: 18pt;
-  margin: 16pt 0 10pt 0;
+  margin: 16pt 0 8pt 0;
   font-weight: 700;
   color: #000;
 }
 
 .pdf-preview-content h3 {
   font-size: 14pt;
-  margin: 12pt 0 8pt 0;
+  margin: 12pt 0 6pt 0;
   font-weight: 600;
   color: #000;
 }
 
 .pdf-preview-content p {
-  margin: 8pt 0;
+  margin: 6pt 0;
   orphans: 3;
   widows: 3;
 }
@@ -74,20 +206,24 @@
   height: 0;
 }
 
+.pdf-preview-content p:last-child {
+  margin-bottom: 0;
+}
+
 .pdf-preview-content p + p {
-  margin-top: 8pt;
+  margin-top: 6pt;
 }
 
 .pdf-preview-content h1 + p,
 .pdf-preview-content h2 + p,
 .pdf-preview-content h3 + p {
-  margin-top: 8pt;
+  margin-top: 6pt;
 }
 
 .pdf-preview-content p + h1,
 .pdf-preview-content p + h2,
 .pdf-preview-content p + h3 {
-  margin-top: 16pt;
+  margin-top: 14pt;
 }
 
 .pdf-preview-content strong,
@@ -106,7 +242,7 @@
 
 .pdf-preview-content ul,
 .pdf-preview-content ol {
-  margin: 10pt 0;
+  margin: 6pt 0;
   padding-left: 25pt;
 }
 
@@ -119,7 +255,11 @@
 }
 
 .pdf-preview-content li {
-  margin: 4pt 0;
+  margin: 3pt 0;
+}
+
+.pdf-preview-content li:last-child {
+  margin-bottom: 0;
 }
 
 .pdf-preview-content ul ul {
@@ -142,13 +282,13 @@
   max-width: 100%;
   height: auto;
   display: block;
-  margin: 12pt auto;
+  margin: 8pt auto;
 }
 
 .pdf-preview-content table {
   width: 100%;
   border-collapse: collapse;
-  margin: 10pt 0;
+  margin: 6pt 0;
 }
 
 .pdf-preview-content th,

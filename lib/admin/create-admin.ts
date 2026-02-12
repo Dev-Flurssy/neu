@@ -65,7 +65,8 @@ export async function createAdmin(
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(input.password, 10);
+    const saltRounds = process.env.NODE_ENV === "development" ? 10 : 10;
+    const hashedPassword = await bcrypt.hash(input.password, saltRounds);
 
     // Create admin user
     const admin = await prisma.user.create({

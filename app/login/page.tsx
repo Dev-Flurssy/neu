@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { GoogleIcon } from "@/app/components/icons/GoogleIcon";
 import AuthSkeleton from "@/app/components/auth/AuthSkeleton";
+import AuthLoadingSpinner from "@/app/components/loading/AuthLoadingSpinner";
 
 const LoginPage = () => {
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
   const [error, setError] = useState("");
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -37,8 +39,11 @@ const LoginPage = () => {
     checkRoleAndRedirect();
   }, [status, session, router]);
 
-  // Show loading while checking session or during login
-  if (status === "loading" || loading) return <AuthSkeleton />;
+  // Show loading while checking session
+  if (status === "loading") return <AuthSkeleton />;
+  
+  // Show custom loading spinner during login
+  if (loading) return <AuthLoadingSpinner message={loadingMessage} />;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 px-4 py-12">
@@ -65,7 +70,17 @@ const LoginPage = () => {
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
               <div className="flex-1">
-                <p className="text-sm font-medium text-red-800">{error}</p>
+                <p className="text-sm font-medium text-red-800">
+                  {error}
+                  {error.includes("verify your email") && (
+                    <Link 
+                      href={`/verify-email?email=${encodeURIComponent(sessionStorage.getItem("unverifiedEmail") || "")}`}
+                      className="text-blue-600 hover:text-blue-700 underline ml-1"
+                    >
+                      Verify Now
+                    </Link>
+                  )}
+                </p>
               </div>
               <button onClick={() => setError("")} className="text-red-400 hover:text-red-600">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -80,6 +95,7 @@ const LoginPage = () => {
             onClick={async () => {
               try {
                 setLoading(true);
+                setLoadingMessage("Signing in with Google...");
                 setError("");
                 await signIn("google", { callbackUrl: "/dashboard" });
               } catch (err: any) {
@@ -108,6 +124,7 @@ const LoginPage = () => {
 
               try {
                 setLoading(true);
+                setLoadingMessage("Signing in...");
                 setError("");
 
                 const res = await signIn("credentials", {
@@ -117,9 +134,21 @@ const LoginPage = () => {
                 });
 
                 if (res?.error) {
-                  throw new Error("Invalid email or password");
+                  // Check if error is about email verification
+                  if (res.error.includes("verify your email")) {
+                    setError(
+                      `${res.error} Click here to verify: `
+                    );
+                    // Store email for verification link
+                    sessionStorage.setItem("unverifiedEmail", form.email.value);
+                  } else {
+                    throw new Error("Invalid email or password");
+                  }
+                  setLoading(false);
+                  return;
                 }
 
+                setLoadingMessage("Redirecting to dashboard...");
                 window.location.href = "/dashboard";
               } catch (err: any) {
                 setError(err.message || "Failed to log in");

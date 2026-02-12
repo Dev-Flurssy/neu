@@ -14,7 +14,7 @@ const baseStyles = `
   u { text-decoration: underline; }
   
   ul, ol {
-    margin: 0 0 8pt 0;
+    margin: 6pt 0;
     padding-left: 24pt;
   }
   
@@ -22,14 +22,14 @@ const baseStyles = `
   ol { list-style-type: decimal; }
   
   li { 
-    margin: 0 0 4pt 0;
+    margin: 0 0 3pt 0;
     padding-left: 4pt;
-    line-height: 1.5;
+    line-height: 1.6;
   }
   
   /* Nested lists - proper spacing */
   li ul, li ol {
-    margin: 4pt 0;
+    margin: 3pt 0;
     padding-left: 20pt;
   }
   
@@ -38,25 +38,37 @@ const baseStyles = `
     margin: 2pt 0;
   }
   
+  /* Last list item has no bottom margin */
+  li:last-child {
+    margin-bottom: 0;
+  }
+  
   img {
     max-width: 100%;
     height: auto;
     display: block;
-    margin: 12pt auto;
+    margin: 8pt auto;
+    object-fit: contain;
+    max-height: 850px; /* Prevent images from exceeding ~90% of page height */
+  }
+  
+  /* Images without explicit dimensions get additional constraint */
+  img:not([width]):not([height]) {
+    max-height: 400pt;
   }
   
   table {
     width: 100%;
     border-collapse: collapse;
-    margin: 8pt 0;
+    margin: 6pt 0;
   }
   
   th, td {
     border: 1px solid #d1d5db;
     padding: 6pt;
     text-align: left;
-    font-size: 11pt;
-    line-height: 1.4;
+    font-size: 12pt;
+    line-height: 1.5;
   }
   
   th {
@@ -108,63 +120,70 @@ export function createPdfHtml(title: string, html: string): string {
     ${baseStyles}
     
     body {
-      font-size: 11pt;
-      line-height: 1.5;
+      font-size: 12pt;
+      line-height: 1.6;
       padding: 0;
     }
     
     h1 { 
-      font-size: 20pt; 
-      margin: 12pt 0 6pt 0; 
+      font-size: 22pt; 
+      margin: 10pt 0 6pt 0; 
       font-weight: 700; 
       line-height: 1.3;
-      page-break-after: avoid;
-      break-after: avoid;
     }
     
     h2 { 
-      font-size: 16pt; 
-      margin: 10pt 0 5pt 0; 
+      font-size: 18pt; 
+      margin: 8pt 0 5pt 0; 
       font-weight: 700; 
       line-height: 1.3;
-      page-break-after: avoid;
-      break-after: avoid;
     }
     
     h3 { 
-      font-size: 13pt; 
-      margin: 8pt 0 4pt 0; 
+      font-size: 14pt; 
+      margin: 6pt 0 4pt 0; 
       font-weight: 600; 
       line-height: 1.3;
-      page-break-after: avoid;
-      break-after: avoid;
     }
     
-    /* Prevent headings from being orphaned at bottom of page */
+    p { 
+      margin: 0 0 6pt 0; 
+      orphans: 2; 
+      widows: 2; 
+      line-height: 1.6;
+      font-size: 12pt;
+    }
+    
+    /* Last paragraph in a section has no bottom margin */
+    p:last-child {
+      margin-bottom: 0;
+    }
+    
+    /* Smart page breaking rules */
+    
+    /* Headings: avoid breaking after them if possible */
     h1, h2, h3 {
+      page-break-after: avoid;
+      break-after: avoid;
       page-break-inside: avoid;
       break-inside: avoid;
     }
     
-    /* Keep heading with at least the next element */
+    /* Keep heading with at least some following content */
     h1 + *, h2 + *, h3 + * {
       page-break-before: avoid;
       break-before: avoid;
     }
     
-    p { 
-      margin: 0 0 8pt 0; 
-      orphans: 2; 
-      widows: 2; 
-      line-height: 1.5;
-    }
-    
-    /* Allow lists to break across pages but keep individual items together when possible */
+    /* Lists: allow breaking but try to keep items together */
     ul, ol { 
       page-break-inside: auto;
       break-inside: auto;
+      orphans: 2;
+      widows: 2;
     }
     
+    /* List items: prefer to stay together but can break if needed */
     li { 
       page-break-inside: avoid;
       break-inside: avoid;
@@ -172,7 +191,7 @@ export function createPdfHtml(title: string, html: string): string {
       widows: 2;
     }
     
-    /* Allow images to break if needed, but prefer to keep them together */
+    /* Images: avoid breaking */
     img { 
       page-break-inside: avoid;
       break-inside: avoid;
@@ -180,10 +199,16 @@ export function createPdfHtml(title: string, html: string): string {
       page-break-after: auto;
     }
     
-    /* Tables should avoid breaking when possible */
+    /* Tables: try to keep together */
     table { 
       page-break-inside: avoid;
       break-inside: avoid;
+    }
+    
+    /* Paragraphs: allow natural breaking */
+    p {
+      orphans: 3;
+      widows: 3;
     }
   </style>
 </head>
@@ -234,13 +259,17 @@ export function createDocumentHtml(html: string, fontSize: string = "11pt"): str
     }
     
     p { 
-      margin: 0 0 8pt 0; 
+      margin: 0 0 6pt 0; 
       font-size: 11pt; 
       line-height: 1.5;
     }
     
+    p:last-child {
+      margin-bottom: 0;
+    }
+    
     ul, ol {
-      margin: 0 0 8pt 0;
+      margin: 0 0 6pt 0;
       padding-left: 24pt;
       line-height: 1.5;
     }
@@ -248,8 +277,12 @@ export function createDocumentHtml(html: string, fontSize: string = "11pt"): str
     li { 
       font-size: 11pt; 
       line-height: 1.5;
-      margin: 0 0 4pt 0;
+      margin: 0 0 3pt 0;
       padding-left: 4pt;
+    }
+    
+    li:last-child {
+      margin-bottom: 0;
     }
     
     /* Nested lists */
@@ -287,8 +320,8 @@ export function createPdfHtmlWithPagination(title: string, html: string): string
     ${baseStyles}
     
     body {
-      font-size: 11pt;
-      line-height: 1.5;
+      font-size: 12pt;
+      line-height: 1.6;
       padding: 0;
       margin: 0;
       background: #ffffff;
@@ -319,76 +352,86 @@ export function createPdfHtmlWithPagination(title: string, html: string): string
       max-width: 100%;
       margin: 0;
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 11pt;
-      line-height: 1.5;
+      font-size: 12pt;
+      line-height: 1.6;
       color: #111111;
       word-wrap: break-word;
       overflow-wrap: break-word;
     }
     
     h1 { 
-      font-size: 20pt; 
-      margin: 12pt 0 6pt 0; 
+      font-size: 22pt; 
+      margin: 10pt 0 6pt 0; 
       font-weight: 700; 
       line-height: 1.3;
     }
     
     h2 { 
-      font-size: 16pt; 
-      margin: 10pt 0 5pt 0; 
+      font-size: 18pt; 
+      margin: 8pt 0 5pt 0; 
       font-weight: 700; 
       line-height: 1.3;
     }
     
     h3 { 
-      font-size: 13pt; 
-      margin: 8pt 0 4pt 0; 
+      font-size: 14pt; 
+      margin: 6pt 0 4pt 0; 
       font-weight: 600; 
       line-height: 1.3;
     }
     
     p { 
-      margin: 0 0 8pt 0; 
-      line-height: 1.5;
-      font-size: 11pt;
+      margin: 0 0 6pt 0; 
+      line-height: 1.6;
+      font-size: 12pt;
+    }
+    
+    p:last-child {
+      margin-bottom: 0;
     }
     
     ul, ol {
-      margin: 0 0 8pt 0;
+      margin: 6pt 0;
       padding-left: 24pt;
-      line-height: 1.5;
+      line-height: 1.6;
     }
     
     li {
-      margin: 0 0 4pt 0;
+      margin: 0 0 3pt 0;
       padding-left: 4pt;
-      line-height: 1.5;
-      font-size: 11pt;
+      line-height: 1.6;
+      font-size: 12pt;
+    }
+    
+    li:last-child {
+      margin-bottom: 0;
     }
     
     img {
       display: block;
-      margin: 12pt auto;
+      margin: 8pt auto;
       max-width: 100%;
+      height: auto;
+      object-fit: contain;
     }
     
-    /* Images without explicit dimensions use auto height */
+    /* Images without explicit dimensions get max-height constraint */
     img:not([width]):not([height]) {
-      height: auto;
+      max-height: 400pt;
     }
     
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 8pt 0;
+      margin: 6pt 0;
     }
     
     th, td {
       border: 1px solid #d1d5db;
       padding: 6pt;
       text-align: left;
-      font-size: 11pt;
-      line-height: 1.4;
+      font-size: 12pt;
+      line-height: 1.5;
     }
     
     th {
@@ -491,8 +534,8 @@ export function createPdfHtmlWithPagination(title: string, html: string): string
         measurer.style.visibility = 'hidden';
         measurer.style.width = pageWidth + 'px';
         measurer.style.fontFamily = 'Arial, Helvetica, sans-serif';
-        measurer.style.fontSize = '11pt';
-        measurer.style.lineHeight = '1.5';
+        measurer.style.fontSize = '12pt';
+        measurer.style.lineHeight = '1.6';
         measurer.appendChild(element.cloneNode(true));
         document.body.appendChild(measurer);
         
@@ -501,22 +544,88 @@ export function createPdfHtmlWithPagination(title: string, html: string): string
         const height = measurer.getBoundingClientRect().height;
         document.body.removeChild(measurer);
         
-        // Heading orphan prevention
+        // SMART PAGINATION LOGIC
+        
+        // 1. HEADING ORPHAN PREVENTION
         if (block.type === 'heading' && blocks[i + 1]) {
-          const minContentHeight = 50;
           const nextBlock = blocks[i + 1];
+          const headingTag = element.tagName.toLowerCase();
           
-          // Only apply orphan prevention if the next block is NOT an image
+          // Skip orphan prevention for images - they can go on next page
           if (nextBlock.type !== 'image') {
-            if (currentHeight + height <= pageHeight && 
-                currentHeight + height + minContentHeight > pageHeight) {
-              startNewPage();
+            // Measure next block
+            const tempNext = document.createElement('div');
+            tempNext.innerHTML = nextBlock.html;
+            const nextElement = tempNext.firstElementChild;
+            
+            if (nextElement) {
+              const nextMeasurer = document.createElement('div');
+              nextMeasurer.style.position = 'absolute';
+              nextMeasurer.style.visibility = 'hidden';
+              nextMeasurer.style.width = pageWidth + 'px';
+              nextMeasurer.style.fontFamily = 'Arial, Helvetica, sans-serif';
+              nextMeasurer.style.fontSize = '12pt';
+              nextMeasurer.style.lineHeight = '1.6';
+              nextMeasurer.appendChild(nextElement.cloneNode(true));
+              document.body.appendChild(nextMeasurer);
+              
+              nextMeasurer.offsetHeight;
+              const nextHeight = nextMeasurer.getBoundingClientRect().height;
+              document.body.removeChild(nextMeasurer);
+              
+              const spaceLeft = pageHeight - (currentHeight + height);
+              
+              // Minimum space needed after heading
+              // H1/H2: 2 lines (~48px), H3: 1.5 lines (~36px)
+              // Lists are more flexible, so reduce requirement
+              let minSpace = (headingTag === 'h1' || headingTag === 'h2') ? 48 : 36;
+              
+              if (nextBlock.type === 'list') {
+                minSpace = 30; // Lists can break, so just need 1.5 lines
+              }
+              
+              // If not enough space for heading + minimum content, move to next page
+              if (spaceLeft < minSpace) {
+                startNewPage();
+              }
+              // If next content is small (not a list) and would create orphan, keep together
+              else if (nextBlock.type !== 'list' && nextHeight < 120 && spaceLeft < nextHeight) {
+                startNewPage();
+              }
             }
           }
         }
         
-        // Check if fits
-        if (currentHeight + height > pageHeight) {
+        // 2. TABLE HANDLING - Try to keep tables together
+        if (block.type === 'table') {
+          const spaceLeft = pageHeight - currentHeight;
+          // If table is larger than 50% of page and won't fit, move to next page
+          if (height > pageHeight * 0.5 && height > spaceLeft) {
+            startNewPage();
+          }
+        }
+        
+        // 3. IMAGE HANDLING - Smart image placement
+        if (block.type === 'image') {
+          const spaceLeft = pageHeight - currentHeight;
+          // If image won't fit and is less than 75% of page height, move to next page
+          if (height > spaceLeft && height < pageHeight * 0.75) {
+            startNewPage();
+          }
+        }
+        
+        // 4. LIST HANDLING - Fit lists efficiently
+        if (block.type === 'list') {
+          const spaceLeft = pageHeight - currentHeight;
+          // Only move to next page if list is large (> 70% page) and won't fit
+          // This allows lists to use available space at bottom of pages
+          if (height > pageHeight * 0.7 && height > spaceLeft) {
+            startNewPage();
+          }
+        }
+        
+        // 5. FINAL FIT CHECK - with small tolerance for rounding
+        if (currentHeight + height > pageHeight + 5) {
           startNewPage();
         }
         

@@ -16,10 +16,21 @@ export default function ForgotPasswordPage() {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Countdown timer for resend button
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => {
+        setResendCooldown(resendCooldown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
 
   if (!mounted) {
     return <ForgotPasswordSkeleton />;
@@ -44,10 +55,40 @@ export default function ForgotPasswordPage() {
         throw new Error(data.error || "Failed to send code");
       }
 
-      setSuccess("Reset code sent! Check your email.");
+      setSuccess("Reset code sent! Check your email. Code expires in 10 minutes.");
       setStep("code");
+      setResendCooldown(60); // Set 60 second cooldown
     } catch (err: any) {
       setError(err.message || "Failed to send reset code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (resendCooldown > 0) return;
+
+    setError("");
+    setSuccess("");
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send code");
+      }
+
+      setSuccess("New reset code sent! Check your email.");
+      setResendCooldown(60); // Set 60 second cooldown
+    } catch (err: any) {
+      setError(err.message || "Failed to resend code");
     } finally {
       setLoading(false);
     }
@@ -165,6 +206,9 @@ export default function ForgotPasswordPage() {
                   required
                   disabled={loading}
                 />
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  Code expires in 10 minutes
+                </p>
               </div>
 
               <div>
@@ -217,14 +261,25 @@ export default function ForgotPasswordPage() {
                 {loading ? "Resetting..." : "Reset Password"}
               </button>
 
-              <button
-                type="button"
-                onClick={() => setStep("email")}
-                disabled={loading}
-                className="w-full px-4 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-medium"
-              >
-                Back
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  disabled={loading || resendCooldown > 0}
+                  className="flex-1 px-4 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {resendCooldown > 0 ? `Resend (${resendCooldown}s)` : "Resend Code"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setStep("email")}
+                  disabled={loading}
+                  className="flex-1 px-4 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-medium"
+                >
+                  Back
+                </button>
+              </div>
             </form>
           )}
 
