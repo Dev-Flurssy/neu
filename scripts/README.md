@@ -115,9 +115,3 @@ npx tsx scripts/make-admin.ts your-email@example.com
 - Or use: `npx tsx` (will auto-install)
 
 ---
-
-## 📚 Related
-
-- Prisma Studio: `npx prisma studio` (visual database editor)
-- Database migrations: `npx prisma migrate dev`
-- Generate Prisma Client: `npx prisma generate`
