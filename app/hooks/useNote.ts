@@ -74,10 +74,25 @@ export function useNote(noteId: string) {
       }
 
       const { data } = await res.json();
-      setNote(data);
+      // Force a new object reference to trigger re-renders
+      setNote({ ...data });
     } catch (err: any) {
       setError(err.message || "Failed to update note");
       throw err;
+    }
+  }
+
+  async function refreshNote() {
+    try {
+      const res = await fetch(`/api/notes/${noteId}`, {
+        credentials: "include",
+      });
+      if (res.ok) {
+        const { data } = await res.json();
+        setNote({ ...data });
+      }
+    } catch (err) {
+      console.error("Failed to refresh note:", err);
     }
   }
 
@@ -90,5 +105,5 @@ export function useNote(noteId: string) {
     if (!res.ok) throw new Error("Failed to delete note");
   }
 
-  return { note, loading, error, updateNote, deleteNote };
+  return { note, loading, error, updateNote, deleteNote, refreshNote };
 }

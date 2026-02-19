@@ -58,9 +58,17 @@ export async function createAdmin(
     });
 
     if (existingUser) {
+      // Check if user is already an admin
+      if (existingUser.role === "admin") {
+        return {
+          success: false,
+          message: "User is already an admin",
+        };
+      }
+      
       return {
         success: false,
-        message: "User with this email already exists",
+        message: "User with this email already exists. Use promote-to-admin instead.",
       };
     }
 

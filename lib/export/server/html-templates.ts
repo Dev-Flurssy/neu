@@ -105,6 +105,13 @@ const baseStyles = `
  * Generate full HTML document for PDF export
  */
 export function createPdfHtml(title: string, html: string): string {
+  // Clean up trailing empty paragraphs and whitespace
+  let cleanedHtml = html
+    .replace(/<p>\s*<\/p>/g, '') // Remove empty paragraphs
+    .replace(/<p><br><\/p>/g, '') // Remove paragraphs with just br
+    .replace(/<p>&nbsp;<\/p>/g, '') // Remove paragraphs with nbsp
+    .trim();
+  
   return `
 <!DOCTYPE html>
 <html>
@@ -213,7 +220,7 @@ export function createPdfHtml(title: string, html: string): string {
   </style>
 </head>
 <body>
-  ${html}
+  ${cleanedHtml}
 </body>
 </html>`;
 }
@@ -222,6 +229,13 @@ export function createPdfHtml(title: string, html: string): string {
  * Generate full HTML document for DOCX/PPTX export
  */
 export function createDocumentHtml(html: string, fontSize: string = "11pt"): string {
+  // Clean up trailing empty paragraphs and whitespace
+  let cleanedHtml = html
+    .replace(/<p>\s*<\/p>/g, '') // Remove empty paragraphs
+    .replace(/<p><br><\/p>/g, '') // Remove paragraphs with just br
+    .replace(/<p>&nbsp;<\/p>/g, '') // Remove paragraphs with nbsp
+    .trim();
+  
   return `
 <!DOCTYPE html>
 <html>
@@ -298,7 +312,7 @@ export function createDocumentHtml(html: string, fontSize: string = "11pt"): str
   </style>
 </head>
 <body>
-  <div id="content">${html}</div>
+  <div id="content">${cleanedHtml}</div>
 </body>
 </html>`;
 }

@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-const VerifyEmailPage = () => {
+const VerifyEmailContent = () => {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -228,6 +228,21 @@ const VerifyEmailPage = () => {
         </p>
       </div>
     </div>
+  );
+};
+
+const VerifyEmailPage = () => {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-blue-50">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <VerifyEmailContent />
+    </Suspense>
   );
 };
 

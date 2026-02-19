@@ -3,7 +3,7 @@ import { launchBrowser, waitForImages, closeBrowser } from "@/lib/export/server/
 import { createPdfHtml } from "@/lib/export/server/html-templates";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 120; // 2 minutes for large documents with images
 
 export async function POST(req: Request) {
   let browser;
@@ -29,14 +29,14 @@ export async function POST(req: Request) {
     });
 
     await page.setContent(fullHtml, { 
-      waitUntil: "networkidle0",
-      timeout: 60000 
+      waitUntil: "domcontentloaded", // Faster than networkidle0
+      timeout: 30000 
     });
 
     await waitForImages(page);
 
     // Small delay to ensure rendering is complete
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     const pdfBuffer = await page.pdf({
       format: "A4",

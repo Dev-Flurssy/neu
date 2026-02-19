@@ -29,8 +29,40 @@ export async function POST(req: Request) {
       timeout: 30000
     });
 
-    // Wait for images to load with a 10 second timeout
-    await waitForImages(page, 10000);
+    // Wait for images to load with a 15 second timeout (increased from 10)
+    await waitForImages(page, 15000);
+
+    // Additional wait to ensure all images are fully rendered
+    await page.evaluate(() => {
+      return new Promise<void>((resolve) => {
+        // Wait for all images to be complete
+        const images = Array.from(document.querySelectorAll('img'));
+        if (images.length === 0) {
+          resolve();
+          return;
+        }
+
+        let loadedCount = 0;
+        const checkComplete = () => {
+          loadedCount++;
+          if (loadedCount >= images.length) {
+            resolve();
+          }
+        };
+
+        images.forEach(img => {
+          if (img.complete && img.naturalHeight !== 0) {
+            checkComplete();
+          } else {
+            img.addEventListener('load', checkComplete);
+            img.addEventListener('error', checkComplete);
+          }
+        });
+
+        // Timeout after 5 seconds
+        setTimeout(() => resolve(), 5000);
+      });
+    });
 
     const blocks = await extractBlocks(page);
 

@@ -1,6 +1,19 @@
 import PptxGenJS from "pptxgenjs";
 import type { LayoutBlock } from "../pagination/types";
 
+// PPTX slide dimensions (in inches)
+const SLIDE_WIDTH = 10;
+const SLIDE_HEIGHT = 7.5;
+const MARGIN = 0.5;
+const CONTENT_WIDTH = SLIDE_WIDTH - (2 * MARGIN);
+const CONTENT_HEIGHT = SLIDE_HEIGHT - (2 * MARGIN) - 0.5; // More buffer
+const MAX_CONTENT_Y = SLIDE_HEIGHT - MARGIN - 0.5; // Stop earlier
+
+// Very conservative character-per-line estimates
+const CHARS_PER_INCH_16PT = 8; // Reduced from 10
+const CHARS_PER_INCH_14PT = 9; // Reduced from 11
+const CHARS_PER_INCH_HEADING = 6; // Reduced from 8
+
 export async function buildPptxFromBlocks(
   title: string,
   blocks: LayoutBlock[],
@@ -10,9 +23,9 @@ export async function buildPptxFromBlocks(
   // Title slide
   const titleSlide = pptx.addSlide();
   titleSlide.addText(title, {
-    x: 0.5,
+    x: MARGIN,
     y: 2.5,
-    w: 9,
+    w: CONTENT_WIDTH,
     h: 1,
     fontSize: 44,
     bold: true,
@@ -21,20 +34,10 @@ export async function buildPptxFromBlocks(
   });
 
   let currentSlide = pptx.addSlide();
-  let yPosition = 0.5;
-  const maxY = 6.8; // Slightly more conservative to avoid overflow
-  const slideWidth = 9;
-  const leftMargin = 0.5;
+  let yPosition = MARGIN;
 
   for (let i = 0; i < blocks.length; i++) {
     const block = blocks[i];
-    const blockHeight = estimateBlockHeight(block);
-
-    // Create new slide if content doesn't fit (with some buffer)
-    if (yPosition + blockHeight > maxY && yPosition > 0.5) {
-      currentSlide = pptx.addSlide();
-      yPosition = 0.5;
-    }
 
     switch (block.type) {
       case "heading": {
@@ -44,15 +47,18 @@ export async function buildPptxFromBlocks(
             ? 2
             : 3;
         const fontSize = level === 1 ? 32 : level === 2 ? 26 : 22;
-        const actualHeight = level === 1 ? 0.7 : level === 2 ? 0.6 : 0.5;
         
-        // Check if we need a new slide
-        if (yPosition + actualHeight > maxY) {
+        const text = extractText(block.html);
+        const charsPerLine = Math.floor(CONTENT_WIDTH * CHARS_PER_INCH_HEADING);
+        const lines = Math.max(1, Math.ceil(text.length / charsPerLine));
+        const lineHeightInches = (fontSize / 72) * 1.5; // Increased from 1.4
+        const actualHeight = (lines * lineHeightInches) + 0.25; // More spacing
+        
+        if (yPosition + actualHeight > MAX_CONTENT_Y) {
           currentSlide = pptx.addSlide();
-          yPosition = 0.5;
+          yPosition = MARGIN;
         }
 
-        // Use inline runs if available for rich text
         if (block.meta?.inline && block.meta.inline.length > 0) {
           const textOptions = block.meta.inline.map((run: any) => ({
             text: run.text,
@@ -66,19 +72,18 @@ export async function buildPptxFromBlocks(
           }));
 
           currentSlide.addText(textOptions, {
-            x: leftMargin,
+            x: MARGIN,
             y: yPosition,
-            w: slideWidth,
+            w: CONTENT_WIDTH,
             h: actualHeight,
             wrap: true,
             valign: "top",
           });
         } else {
-          const text = extractText(block.html);
           currentSlide.addText(text, {
-            x: leftMargin,
+            x: MARGIN,
             y: yPosition,
-            w: slideWidth,
+            w: CONTENT_WIDTH,
             h: actualHeight,
             fontSize,
             bold: true,
@@ -88,7 +93,7 @@ export async function buildPptxFromBlocks(
           });
         }
 
-        yPosition += actualHeight + 0.15; // Add spacing after heading
+        yPosition += actualHeight;
         break;
       }
 
@@ -96,24 +101,22 @@ export async function buildPptxFromBlocks(
         const text = extractText(block.html);
         if (!text.trim()) break;
 
-        // Calculate actual height needed for text (more accurate)
-        const charCount = text.length;
-        const charsPerLine = 90; // ~90 chars per line at 16pt on 9" width
-        const lines = Math.ceil(charCount / charsPerLine);
-        const actualHeight = Math.max(0.35, lines * 0.22);
+        const fontSize = 16;
+        const charsPerLine = Math.floor(CONTENT_WIDTH * CHARS_PER_INCH_16PT);
+        const lines = Math.max(1, Math.ceil(text.length / charsPerLine));
+        const lineHeightInches = (fontSize / 72) * 1.7; // Increased from 1.6
+        const actualHeight = (lines * lineHeightInches) + 0.2; // More spacing
 
-        // Check if we need a new slide
-        if (yPosition + actualHeight > maxY) {
+        if (yPosition + actualHeight > MAX_CONTENT_Y) {
           currentSlide = pptx.addSlide();
-          yPosition = 0.5;
+          yPosition = MARGIN;
         }
 
-        // Use inline runs if available for rich text
         if (block.meta?.inline && block.meta.inline.length > 0) {
           const textOptions = block.meta.inline.map((run: any) => ({
             text: run.text,
             options: {
-              fontSize: 16,
+              fontSize,
               bold: run.bold,
               italic: run.italic,
               underline: run.underline ? { style: "sng" } : undefined,
@@ -122,50 +125,52 @@ export async function buildPptxFromBlocks(
           }));
 
           currentSlide.addText(textOptions, {
-            x: leftMargin,
+            x: MARGIN,
             y: yPosition,
-            w: slideWidth,
+            w: CONTENT_WIDTH,
             h: actualHeight,
             wrap: true,
             valign: "top",
           });
         } else {
           currentSlide.addText(text, {
-            x: leftMargin,
+            x: MARGIN,
             y: yPosition,
-            w: slideWidth,
+            w: CONTENT_WIDTH,
             h: actualHeight,
-            fontSize: 16,
+            fontSize,
             color: rgbToHex(block.meta?.layout?.color) || "363636",
             wrap: true,
             valign: "top",
           });
         }
         
-        yPosition += actualHeight + 0.1;
+        yPosition += actualHeight;
         break;
       }
 
+      case "list":
       case "list-item": {
         const text = extractText(block.html);
         if (!text.trim()) break;
 
-        const charCount = text.length;
-        const charsPerLine = 80; // Slightly less for bullets
-        const lines = Math.ceil(charCount / charsPerLine);
-        const itemHeight = Math.max(0.3, lines * 0.2);
+        const fontSize = 14;
+        const effectiveWidth = CONTENT_WIDTH - 0.5;
+        const charsPerLine = Math.floor(effectiveWidth * CHARS_PER_INCH_14PT);
+        const lines = Math.max(1, Math.ceil(text.length / charsPerLine));
+        const lineHeightInches = (fontSize / 72) * 1.6; // Increased from 1.5
+        const itemHeight = (lines * lineHeightInches) + 0.15; // More spacing
 
-        if (yPosition + itemHeight > maxY) {
+        if (yPosition + itemHeight > MAX_CONTENT_Y) {
           currentSlide = pptx.addSlide();
-          yPosition = 0.5;
+          yPosition = MARGIN;
         }
 
-        // Use inline runs if available for rich text
         if (block.meta?.inline && block.meta.inline.length > 0) {
           const textOptions = block.meta.inline.map((run: any) => ({
             text: run.text,
             options: {
-              fontSize: 14,
+              fontSize,
               bold: run.bold,
               italic: run.italic,
               underline: run.underline ? { style: "sng" } : undefined,
@@ -174,9 +179,9 @@ export async function buildPptxFromBlocks(
           }));
 
           currentSlide.addText(textOptions, {
-            x: leftMargin,
+            x: MARGIN,
             y: yPosition,
-            w: slideWidth,
+            w: CONTENT_WIDTH,
             h: itemHeight,
             bullet: true,
             wrap: true,
@@ -184,11 +189,11 @@ export async function buildPptxFromBlocks(
           });
         } else {
           currentSlide.addText(text, {
-            x: leftMargin,
+            x: MARGIN,
             y: yPosition,
-            w: slideWidth,
+            w: CONTENT_WIDTH,
             h: itemHeight,
-            fontSize: 14,
+            fontSize,
             bullet: true,
             color: rgbToHex(block.meta?.layout?.color) || "363636",
             wrap: true,
@@ -196,7 +201,7 @@ export async function buildPptxFromBlocks(
           });
         }
 
-        yPosition += itemHeight + 0.05;
+        yPosition += itemHeight;
         break;
       }
 
@@ -204,59 +209,46 @@ export async function buildPptxFromBlocks(
         const imgSrc = block.meta?.image?.src || extractImageSrc(block.html);
         if (imgSrc) {
           try {
-            // Images get their own slide for better presentation
-            currentSlide = pptx.addSlide();
-            yPosition = 0.5;
-
-            // Handle base64 images
-            let imageData = imgSrc;
-            if (imgSrc.startsWith("data:")) {
-              // PptxGenJS can handle data URLs directly
-              imageData = imgSrc;
-            }
-
-            // Get image dimensions if available
             const imgWidth = block.meta?.image?.width || 600;
             const imgHeight = block.meta?.image?.height || 400;
-            
-            // Calculate aspect ratio
             const aspectRatio = imgWidth / imgHeight;
             
-            // Fit image to slide (max 8" wide, 5" tall)
-            let displayWidth = 8;
+            let displayWidth = Math.min(CONTENT_WIDTH, 7);
             let displayHeight = displayWidth / aspectRatio;
             
-            if (displayHeight > 5) {
-              displayHeight = 5;
+            const maxImageHeight = 4.5;
+            if (displayHeight > maxImageHeight) {
+              displayHeight = maxImageHeight;
               displayWidth = displayHeight * aspectRatio;
             }
 
-            // Center the image
-            const xPos = (10 - displayWidth) / 2;
-            const yPos = (7.5 - displayHeight) / 2;
+            if (yPosition + displayHeight > MAX_CONTENT_Y) {
+              currentSlide = pptx.addSlide();
+              yPosition = MARGIN;
+            }
+
+            const xPos = MARGIN + (CONTENT_WIDTH - displayWidth) / 2;
+            let imageData = imgSrc;
 
             currentSlide.addImage({
               data: imageData,
               x: xPos,
-              y: yPos,
+              y: yPosition,
               w: displayWidth,
               h: displayHeight,
             });
 
-            // Start fresh on next slide
-            currentSlide = pptx.addSlide();
-            yPosition = 0.5;
+            yPosition += displayHeight + 0.25;
           } catch (err) {
             console.error("Failed to add image to PPTX:", err);
-            // Add placeholder text if image fails
-            if (yPosition + 0.5 > maxY) {
+            if (yPosition + 0.5 > MAX_CONTENT_Y) {
               currentSlide = pptx.addSlide();
-              yPosition = 0.5;
+              yPosition = MARGIN;
             }
             currentSlide.addText("[Image could not be loaded]", {
-              x: leftMargin,
+              x: MARGIN,
               y: yPosition,
-              w: slideWidth,
+              w: CONTENT_WIDTH,
               fontSize: 14,
               color: "999999",
               italic: true,
@@ -278,26 +270,73 @@ export async function buildPptxFromBlocks(
           
         if (tableData.length > 0) {
           const rowHeight = 0.4;
-          const tableHeight = tableData.length * rowHeight + 0.3;
+          const tableHeight = tableData.length * rowHeight + 0.25;
           
-          // Tables get their own slide if they're large
-          if (tableHeight > 4 || yPosition + tableHeight > maxY) {
-            currentSlide = pptx.addSlide();
-            yPosition = 0.5;
+          if (yPosition + tableHeight > MAX_CONTENT_Y) {
+            if (tableHeight > CONTENT_HEIGHT) {
+              const rowsPerSlide = Math.floor((CONTENT_HEIGHT - 0.5) / rowHeight);
+              let rowIndex = 0;
+              
+              while (rowIndex < tableData.length) {
+                if (yPosition > MARGIN + 0.5) {
+                  currentSlide = pptx.addSlide();
+                  yPosition = MARGIN;
+                }
+                
+                const rowsToAdd = Math.min(rowsPerSlide, tableData.length - rowIndex);
+                const slideTableData = tableData.slice(rowIndex, rowIndex + rowsToAdd);
+                const slideTableHeight = slideTableData.length * rowHeight + 0.25;
+                
+                currentSlide.addTable(slideTableData, {
+                  x: MARGIN,
+                  y: yPosition,
+                  w: CONTENT_WIDTH,
+                  border: { type: "solid", color: "CFCFCF", pt: 1 },
+                  fontSize: 11,
+                  color: "363636",
+                  valign: "top",
+                  rowH: rowHeight,
+                });
+                
+                yPosition += slideTableHeight;
+                rowIndex += rowsToAdd;
+                
+                if (rowIndex < tableData.length) {
+                  currentSlide = pptx.addSlide();
+                  yPosition = MARGIN;
+                }
+              }
+            } else {
+              currentSlide = pptx.addSlide();
+              yPosition = MARGIN;
+              
+              currentSlide.addTable(tableData, {
+                x: MARGIN,
+                y: yPosition,
+                w: CONTENT_WIDTH,
+                border: { type: "solid", color: "CFCFCF", pt: 1 },
+                fontSize: 11,
+                color: "363636",
+                valign: "top",
+                rowH: rowHeight,
+              });
+              
+              yPosition += tableHeight;
+            }
+          } else {
+            currentSlide.addTable(tableData, {
+              x: MARGIN,
+              y: yPosition,
+              w: CONTENT_WIDTH,
+              border: { type: "solid", color: "CFCFCF", pt: 1 },
+              fontSize: 11,
+              color: "363636",
+              valign: "top",
+              rowH: rowHeight,
+            });
+
+            yPosition += tableHeight;
           }
-
-          currentSlide.addTable(tableData, {
-            x: leftMargin,
-            y: yPosition,
-            w: slideWidth,
-            border: { type: "solid", color: "CFCFCF", pt: 1 },
-            fontSize: 12,
-            color: "363636",
-            valign: "top",
-            rowH: rowHeight,
-          });
-
-          yPosition += tableHeight + 0.2;
         }
         break;
       }
@@ -308,34 +347,6 @@ export async function buildPptxFromBlocks(
   }
 
   return pptx.write({ outputType: "nodebuffer" }) as Promise<Buffer>;
-}
-
-// Helper functions
-function estimateBlockHeight(block: LayoutBlock): number {
-  switch (block.type) {
-    case "heading": {
-      const level = block.html.startsWith("<h1") ? 1 : block.html.startsWith("<h2") ? 2 : 3;
-      return level === 1 ? 0.7 : level === 2 ? 0.6 : 0.5;
-    }
-    case "paragraph": {
-      const text = extractText(block.html);
-      const lines = Math.ceil(text.length / 90);
-      return Math.max(0.35, lines * 0.22);
-    }
-    case "list-item": {
-      const text = extractText(block.html);
-      const lines = Math.ceil(text.length / 80);
-      return Math.max(0.3, lines * 0.2);
-    }
-    case "image":
-      return 5.5; // Images get their own slide
-    case "table": {
-      const rows = block.meta?.table?.rows || extractTableData(block.html);
-      return rows.length * 0.4 + 0.3;
-    }
-    default:
-      return 0.35;
-  }
 }
 
 function extractText(html: string): string {
@@ -378,12 +389,10 @@ function extractTableData(html: string): any[][] {
 function rgbToHex(rgb: string | undefined): string | undefined {
   if (!rgb) return undefined;
   
-  // If already hex, return without #
   if (rgb.startsWith("#")) {
     return rgb.substring(1);
   }
   
-  // Parse rgb(r, g, b) or rgba(r, g, b, a)
   const match = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
   if (!match) return undefined;
   

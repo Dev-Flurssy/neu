@@ -34,10 +34,34 @@ export async function promoteUserToAdmin(
       };
     }
 
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+      select: { role: true },
+    });
+
+    if (!existingUser) {
+      return {
+        success: false,
+        message: "User doesn't exist",
+      };
+    }
+
+    // Check if user is already an admin
+    if (existingUser.role === "admin") {
+      return {
+        success: false,
+        message: "User is already an admin",
+      };
+    }
+
     // Find and update user
     const user = await prisma.user.update({
       where: { email },
-      data: { role: "admin" },
+      data: { 
+        role: "admin",
+        emailVerified: new Date(), // Auto-verify when promoting to admin
+      },
       select: {
         id: true,
         email: true,
@@ -55,7 +79,7 @@ export async function promoteUserToAdmin(
     if (error.code === "P2025") {
       return {
         success: false,
-        message: "User not found with this email",
+        message: "User doesn't exist",
       };
     }
 

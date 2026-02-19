@@ -38,8 +38,26 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    async signIn({ user }) {
-      // Allow sign in
+    async signIn({ user, account }) {
+      // Google OAuth users are automatically verified
+      if (account?.provider === "google") {
+        return true;
+      }
+      
+      // For credentials login, check if email is verified
+      if (account?.provider === "credentials") {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { emailVerified: true },
+        });
+        
+        // Block sign in if email is not verified
+        if (!dbUser?.emailVerified) {
+          // Return false to prevent sign in
+          return false;
+        }
+      }
+      
       return true;
     },
 

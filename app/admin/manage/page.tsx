@@ -83,6 +83,11 @@ export default function AdminManagePage() {
         throw new Error("User not found with that email address");
       }
 
+      // Check if user is already an admin
+      if (user.role === "admin") {
+        throw new Error("User is already an admin");
+      }
+
       // Now update the user's role using their ID
       const res = await fetch(`/api/admin/users/${user.id}`, {
         method: "PATCH",

@@ -104,7 +104,16 @@ export async function extractBlocks(page: Page): Promise<any[]> {
       // IMAGES (check both direct img tags and imgs inside paragraphs)
       if (tag === "img") {
         const img = el as HTMLImageElement;
-        console.log('Found direct image:', img.src.substring(0, 50), img.width, img.height);
+        const width = img.width || img.naturalWidth || 400;
+        const height = img.height || img.naturalHeight || 300;
+        console.log('Found direct image:', img.src.substring(0, 50), width, height);
+        
+        // Ensure we have a valid src
+        if (!img.src || img.src === 'about:blank') {
+          console.warn('Skipping image with invalid src');
+          continue;
+        }
+        
         blocks.push({
           id: `block-${index++}`,
           type: "image",
@@ -113,8 +122,8 @@ export async function extractBlocks(page: Page): Promise<any[]> {
             layout: extractLayoutModel(el as HTMLElement),
             image: {
               src: img.src,
-              width: img.width || img.naturalWidth,
-              height: img.height || img.naturalHeight,
+              width: width,
+              height: height,
             },
           },
         });
@@ -126,7 +135,16 @@ export async function extractBlocks(page: Page): Promise<any[]> {
         const imgInP = el.querySelector("img");
         if (imgInP && el.children.length === 1) {
           const img = imgInP as HTMLImageElement;
-          console.log('Found image in paragraph:', img.src.substring(0, 50), img.width, img.height);
+          const width = img.width || img.naturalWidth || 400;
+          const height = img.height || img.naturalHeight || 300;
+          console.log('Found image in paragraph:', img.src.substring(0, 50), width, height);
+          
+          // Ensure we have a valid src
+          if (!img.src || img.src === 'about:blank') {
+            console.warn('Skipping image with invalid src');
+            continue;
+          }
+          
           blocks.push({
             id: `block-${index++}`,
             type: "image",
@@ -135,8 +153,8 @@ export async function extractBlocks(page: Page): Promise<any[]> {
               layout: extractLayoutModel(img as HTMLElement),
               image: {
                 src: img.src,
-                width: img.width || img.naturalWidth,
-                height: img.height || img.naturalHeight,
+                width: width,
+                height: height,
               },
             },
           });

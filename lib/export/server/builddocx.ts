@@ -173,9 +173,6 @@ async function buildImage(block: LayoutBlock) {
       return new Paragraph({ text: "[No image source]" });
     }
     
-    console.log('DOCX: Building image with dimensions:', img.width, 'x', img.height);
-    console.log('DOCX: Image source type:', img.src.startsWith('data:') ? 'base64' : 'url');
-    
     // Handle base64 images
     let buffer: Buffer;
     let imageType: "png" | "jpg" | "gif" = "png";
@@ -199,7 +196,6 @@ async function buildImage(block: LayoutBlock) {
       
       try {
         buffer = Buffer.from(base64Data, 'base64');
-        console.log('DOCX: Successfully decoded base64 image, buffer size:', buffer.length);
       } catch (err) {
         console.error("DOCX: Failed to decode base64:", err);
         return new Paragraph({ text: "[Failed to decode image]" });
@@ -222,7 +218,6 @@ async function buildImage(block: LayoutBlock) {
         }
         
         buffer = Buffer.from(await res.arrayBuffer());
-        console.log('DOCX: Successfully fetched external image, buffer size:', buffer.length);
       } catch (err) {
         console.error("DOCX: Failed to fetch external image:", err);
         return new Paragraph({ text: "[Failed to load image]" });
@@ -238,8 +233,6 @@ async function buildImage(block: LayoutBlock) {
     // Get image dimensions (use actual dimensions if available, otherwise defaults)
     let imageWidth = img.width || 400;
     let imageHeight = img.height || 300;
-    
-    console.log('DOCX: Original dimensions:', imageWidth, 'x', imageHeight);
     
     // Calculate max width in pixels (A4 width - margins)
     // A4 width: 8.27 inches = 794 pixels at 96 DPI
@@ -261,8 +254,6 @@ async function buildImage(block: LayoutBlock) {
       imageWidth = Math.round(imageWidth * scale);
     }
     
-    console.log('DOCX: Final dimensions:', imageWidth, 'x', imageHeight);
-
     return new Paragraph({
       children: [
         new ImageRun({

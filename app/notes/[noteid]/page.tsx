@@ -14,9 +14,10 @@ export default function NotePreview({
 }) {
   const { noteid } = use(params);
   const router = useRouter();
-  const { note, loading, error, deleteNote } = useNote(noteid);
+  const { note, loading, error, deleteNote, refreshNote } = useNote(noteid);
   const [pages, setPages] = useState<string[]>([]);
   const [isPaginating, setIsPaginating] = useState(true);
+  const [contentKey, setContentKey] = useState(0);
 
   useEffect(() => {
     if (!note?.content) return;
@@ -47,6 +48,20 @@ export default function NotePreview({
       tempContainer.innerHTML = note.content;
       document.body.appendChild(tempContainer);
 
+      // Wait for images to load
+      const images = tempContainer.querySelectorAll('img');
+      await Promise.all(
+        Array.from(images).map(img => {
+          if (img.complete) return Promise.resolve();
+          return new Promise((resolve) => {
+            img.onload = () => resolve(null);
+            img.onerror = () => resolve(null);
+            // Timeout after 3 seconds
+            setTimeout(() => resolve(null), 3000);
+          });
+        })
+      );
+
       // Calculate available height per page (matches PDF export)
       // A4: 297mm height, padding: 20mm top + 25mm bottom = 252mm available
       const pageHeightMM = 297;
@@ -63,7 +78,7 @@ export default function NotePreview({
       let currentPageHtml = '';
       let currentHeight = 0;
 
-      elements.forEach((element) => {
+      elements.forEach((element, index) => {
         // Check if element has explicit page break
         const hasPageBreak = element.style.breakBefore === 'page' || 
                             element.classList.contains('page-break');
@@ -76,16 +91,28 @@ export default function NotePreview({
           return;
         }
         
+        // Check if paragraph contains only an image - use the image instead
+        let elementToUse = element;
+        if (element.tagName === 'P') {
+          const img = element.querySelector('img');
+          const textContent = element.textContent?.trim() || '';
+          // If paragraph has only an image and no text
+          if (img && element.children.length === 1 && textContent.length === 0) {
+            // Clone the image to preserve all attributes
+            elementToUse = img.cloneNode(true) as HTMLElement;
+          }
+        }
+        
         // Get computed height including margins
-        const style = window.getComputedStyle(element);
+        const style = window.getComputedStyle(elementToUse);
         const marginTop = parseFloat(style.marginTop) || 0;
         const marginBottom = parseFloat(style.marginBottom) || 0;
-        const elementHeight = element.getBoundingClientRect().height + marginTop + marginBottom;
+        const elementHeight = elementToUse.getBoundingClientRect().height + marginTop + marginBottom;
         
         // Special handling for lists - try to split them if they're too long
-        if ((element.tagName === 'UL' || element.tagName === 'OL') && elementHeight > availableHeight) {
-          const listItems = Array.from(element.children) as HTMLElement[];
-          let currentListHtml = `<${element.tagName}>`;
+        if ((elementToUse.tagName === 'UL' || elementToUse.tagName === 'OL') && elementHeight > availableHeight) {
+          const listItems = Array.from(elementToUse.children) as HTMLElement[];
+          let currentListHtml = `<${elementToUse.tagName}>`;
           let listHeight = 40; // Approximate list container overhead
           
           listItems.forEach((li, index) => {
@@ -97,13 +124,13 @@ export default function NotePreview({
             // If adding this item would exceed page height
             if (currentHeight + listHeight + liHeight > availableHeight && currentPageHtml) {
               // Close current list and save page
-              currentListHtml += `</${element.tagName}>`;
+              currentListHtml += `</${elementToUse.tagName}>`;
               currentPageHtml += currentListHtml;
               pagesArray.push(currentPageHtml);
               
               // Start new page with continuation of list
               currentPageHtml = '';
-              currentListHtml = `<${element.tagName} class="list-continuation">`;
+              currentListHtml = `<${elementToUse.tagName} class="list-continuation">`;
               currentHeight = 0;
               listHeight = 40;
             }
@@ -113,7 +140,7 @@ export default function NotePreview({
           });
           
           // Close the list
-          currentListHtml += `</${element.tagName}>`;
+          currentListHtml += `</${elementToUse.tagName}>`;
           currentPageHtml += currentListHtml;
           currentHeight += listHeight;
           return;
@@ -126,17 +153,17 @@ export default function NotePreview({
             currentPageHtml = '';
             currentHeight = 0;
           }
-          pagesArray.push(element.outerHTML);
+          pagesArray.push(elementToUse.outerHTML);
         }
         // If adding this element would exceed page height, start new page
         else if (currentHeight + elementHeight > availableHeight && currentPageHtml) {
           pagesArray.push(currentPageHtml);
-          currentPageHtml = element.outerHTML;
+          currentPageHtml = elementToUse.outerHTML;
           currentHeight = elementHeight;
         }
         // Otherwise add to current page
         else {
-          currentPageHtml += element.outerHTML;
+          currentPageHtml += elementToUse.outerHTML;
           currentHeight += elementHeight;
         }
       });
@@ -154,7 +181,9 @@ export default function NotePreview({
       // Filter out pages that are essentially empty (only whitespace or empty tags)
       const nonEmptyPages = finalPages.filter(page => {
         const textContent = page.replace(/<[^>]*>/g, '').trim();
-        return textContent.length > 0;
+        const hasContent = textContent.length > 0;
+        const hasImg = page.includes('<img');
+        return hasContent || hasImg; // Keep pages with text OR images
       });
       
       // If all pages are empty, show at least one page with the original content
@@ -162,12 +191,10 @@ export default function NotePreview({
       
       setPages(pagesToShow);
       setIsPaginating(false);
-      
-      console.log(`Paginated into ${pagesToShow.length} pages`);
     };
 
     paginateContent();
-  }, [note?.content]);
+  }, [note?.content, contentKey]);
 
   async function handleDelete() {
     if (!confirm("Delete this note?")) return;
