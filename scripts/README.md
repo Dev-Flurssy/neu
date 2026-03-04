@@ -22,10 +22,10 @@ npx tsx scripts/create-admin.ts 20253807@std.neu.edu.tr SecurePass123 "NEU Admin
 ```
 
 **What it does:**
-- ✅ Creates a new user account with admin role
-- ✅ Hashes password securely with bcrypt
-- ✅ Auto-verifies email address
-- ✅ Ready to use immediately
+-  Creates a new user account with admin role
+-  Hashes password securely with bcrypt
+-  Auto-verifies email address
+-  Ready to use immediately
 
 **Requirements:**
 - Email must be unique (not already registered)
@@ -49,8 +49,8 @@ npx tsx scripts/make-admin.ts 20253807@std.neu.edu.tr
 ```
 
 **What it does:**
-- ✅ Finds existing user by email
-- ✅ Changes role from "user" to "admin"
+-  Finds existing user by email
+-  Changes role from "user" to "admin"
 
 **Requirements:**
 - User must already exist in database
