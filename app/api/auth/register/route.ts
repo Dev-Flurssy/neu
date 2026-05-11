@@ -71,16 +71,14 @@ export async function POST(req: Request) {
     const shouldSendEmail = process.env.NODE_ENV === "production" || process.env.EMAIL_ENABLED === "true";
     
     if (shouldSendEmail) {
-      try {
-        await sendEmail({
-          to: email,
-          subject: "Verify Your Email - NEU Notes",
-          html: generateVerificationEmail(code, name || undefined),
-        });
-      } catch (emailError) {
+      // Fire and forget — don't await, never block signup on email
+      sendEmail({
+        to: email,
+        subject: "Verify Your Email - NEU Notes",
+        html: generateVerificationEmail(code, name || undefined),
+      }).catch((emailError) => {
         console.error("Failed to send verification email:", emailError);
-        // Don't fail registration if email fails, user can request resend
-      }
+      });
     } else {
       console.log("📧 Email sending disabled in development");
     }
