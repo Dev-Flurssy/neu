@@ -1,6 +1,22 @@
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // SWC minification is enabled by default in Next.js 15
+  outputFileTracingIncludes: {
+    "/**": [
+      "./node_modules/.prisma/client/**",
+      "./node_modules/@prisma/client/**",
+    ],
+  },
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals = [...(config.externals || []), "@prisma/client"];
+    }
+    return config;
+  },
 };
 
 export default nextConfig;
