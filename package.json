@@ -28,6 +28,7 @@
     "@tiptap/react": "^3.13.0",
     "@tiptap/starter-kit": "^3.13.0",
     "@types/nodemailer": "^7.0.9",
+    "@types/react-speech-recognition": "^3.9.6",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "docx": "9.5.1",
