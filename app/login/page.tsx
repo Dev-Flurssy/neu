@@ -72,14 +72,6 @@ const LoginPage = () => {
               <div className="flex-1">
                 <p className="text-sm font-medium text-red-800">
                   {error}
-                  {error.includes("verify your email") && (
-                    <Link 
-                      href={`/verify-email?email=${encodeURIComponent(sessionStorage.getItem("unverifiedEmail") || "")}`}
-                      className="text-blue-600 hover:text-blue-700 underline ml-1"
-                    >
-                      Verify Now
-                    </Link>
-                  )}
                 </p>
               </div>
               <button onClick={() => setError("")} className="text-red-400 hover:text-red-600">
@@ -134,16 +126,7 @@ const LoginPage = () => {
                 });
 
                 if (res?.error) {
-                  // Check if error is about email verification
-                  if (res.error.includes("verify your email")) {
-                    setError(
-                      `${res.error} Click here to verify: `
-                    );
-                    // Store email for verification link
-                    sessionStorage.setItem("unverifiedEmail", form.email.value);
-                  } else {
-                    throw new Error("Invalid email or password");
-                  }
+                  throw new Error("Invalid email or password");
                   setLoading(false);
                   return;
                 }

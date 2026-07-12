@@ -118,8 +118,8 @@ const SignupPage = () => {
                 setError("");
 
                 // Validate password
-                if (form.password.value.length < 6) {
-                  throw new Error("Password must be at least 6 characters");
+                if (form.password.value.length < 8) {
+                  throw new Error("Password must be at least 8 characters");
                 }
 
                 const res = await fetch("/api/auth/register", {
@@ -138,24 +138,20 @@ const SignupPage = () => {
                   throw new Error(data.error || "Could not create account");
                 }
 
-                // In dev mode, show the verification code
-                if (data.devCode) {
-                  console.log("🔑 DEV MODE - Verification Code:", data.devCode);
-                  alert(`DEV MODE: Your verification code is ${data.devCode}`);
-                }
+                setLoadingMessage("Signing you in...");
 
-                setLoadingMessage("Redirecting to verification...");
+                // Auto-login after successful registration
+                const signInRes = await signIn("credentials", {
+                  email: form.email.value,
+                  password: form.password.value,
+                  redirect: false,
+                });
 
-                // Redirect to verification page
-                if (data.requiresVerification) {
-                  router.push(`/verify-email?email=${encodeURIComponent(form.email.value)}`);
+                if (signInRes?.error) {
+                  // Sign in failed for some reason, just go to login
+                  router.push("/login");
                 } else {
-                  // Fallback: auto-login if verification not required
-                  await signIn("credentials", {
-                    email: form.email.value,
-                    password: form.password.value,
-                    callbackUrl: "/dashboard",
-                  });
+                  window.location.href = "/dashboard";
                 }
               } catch (err: any) {
                 setError(err.message || "Failed to create account");
@@ -203,10 +199,10 @@ const SignupPage = () => {
                 name="password"
                 placeholder="••••••••"
                 required
-                minLength={6}
+                minLength={8}
                 className="w-full border-2 border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
               />
-              <p className="text-xs text-gray-500 mt-1">Must be at least 6 characters</p>
+              <p className="text-xs text-gray-500 mt-1">Must be at least 8 characters</p>
             </div>
 
             <button

@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { authSchema } from "@/app/api/auth/authschema";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
-import { sendEmail, generateVerificationEmail, generateCode } from "@/lib/email";
 
 export async function POST(req: Request) {
   try {
@@ -11,11 +10,9 @@ export async function POST(req: Request) {
     // Validate input
     const validated = authSchema.safeParse(body);
     if (!validated.success) {
+      const firstError = Object.values(validated.error.flatten().fieldErrors).flat()[0];
       return NextResponse.json(
-        { 
-          error: "Validation failed",
-          errors: validated.error.flatten().fieldErrors 
-        },
+        { error: firstError || "Validation failed" },
         { status: 400 },
       );
     }
@@ -39,12 +36,13 @@ export async function POST(req: Request) {
     const saltRounds = process.env.NODE_ENV === "development" ? 10 : 12;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Create user
+    // Create user — email is auto-verified, no confirmation step needed
     const user = await prisma.user.create({
       data: {
         email,
         name,
         password: hashedPassword,
+        emailVerified: new Date(),
       },
       select: {
         id: true,
@@ -53,54 +51,12 @@ export async function POST(req: Request) {
       },
     });
 
-    // Generate verification code
-    const code = generateCode();
-    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-    // Create verification code
-    await prisma.verificationCode.create({
-      data: {
-        email,
-        code,
-        type: "email_verification",
-        expires,
-      },
-    });
-
-    // Send verification email (skip in dev if EMAIL_ENABLED is false)
-    const shouldSendEmail = process.env.NODE_ENV === "production" || process.env.EMAIL_ENABLED === "true";
-    
-    if (shouldSendEmail) {
-      // Fire and forget — don't await, never block signup on email
-      sendEmail({
-        to: email,
-        subject: "Verify Your Email - NEU Notes",
-        html: generateVerificationEmail(code, name || undefined),
-      }).catch((emailError) => {
-        console.error("Failed to send verification email:", emailError);
-      });
-    } else {
-      console.log("📧 Email sending disabled in development");
-    }
-
-    // In development, log the verification code
-    if (process.env.NODE_ENV === "development") {
-      console.log("\n=================================");
-      console.log("📧 VERIFICATION CODE (DEV MODE)");
-      console.log("=================================");
-      console.log(`Email: ${email}`);
-      console.log(`Code: ${code}`);
-      console.log("=================================\n");
-    }
-
     return NextResponse.json(
       { 
         success: true,
-        message: "Account created successfully. Please check your email for verification code.", 
+        message: "Account created successfully.",
         data: user,
-        requiresVerification: true,
-        // Include code in dev mode for easy testing
-        ...(process.env.NODE_ENV === "development" && { devCode: code })
+        requiresVerification: false,
       },
       { status: 201 },
     );

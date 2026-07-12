@@ -1,17 +1,38 @@
-import puppeteer, { Browser, Page } from "puppeteer";
+import puppeteer, { Browser, Page } from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 
 /**
- * Launch Puppeteer browser with standard configuration
+ * Launch Puppeteer browser with standard configuration.
+ * Uses @sparticuz/chromium on production (Vercel) and the local
+ * Chrome/Chromium install in development.
  */
 export async function launchBrowser(): Promise<Browser> {
+  const isDev = process.env.NODE_ENV === "development";
+
+  if (isDev) {
+    // In development, use the locally installed Chrome
+    return await puppeteer.launch({
+      headless: true,
+      executablePath:
+        process.env.PUPPETEER_EXECUTABLE_PATH || // allow override via env
+        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+      ],
+    });
+  }
+
+  // Production (Vercel serverless): use @sparticuz/chromium bundled binary
+  const executablePath = await chromium.executablePath();
+
   return await puppeteer.launch({
-    headless: true,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-gpu",
-    ],
+    args: chromium.args,
+    executablePath,
+    headless: chromium.headless,
+    defaultViewport: chromium.defaultViewport,
   });
 }
 

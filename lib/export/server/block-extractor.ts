@@ -1,4 +1,4 @@
-import { Page } from "puppeteer";
+import { Page } from "puppeteer-core";
 
 /**
  * Extract blocks with computed styles from rendered HTML page
