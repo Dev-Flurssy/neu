@@ -1,10 +1,16 @@
 import puppeteer, { Browser, Page } from "puppeteer-core";
-import chromium from "@sparticuz/chromium";
+import chromium from "@sparticuz/chromium-min";
+
+// Remote chromium binary for Vercel — chromium-min downloads this at runtime
+// so the binary is NOT bundled into the function (avoids 50MB limit).
+const CHROMIUM_REMOTE_URL =
+  "https://github.com/Sparticuz/chromium/releases/download/v131.0.0/chromium-v131.0.0-pack.tar";
 
 /**
  * Launch Puppeteer browser with standard configuration.
- * Uses @sparticuz/chromium on production (Vercel) and the local
- * Chrome/Chromium install in development.
+ * Uses @sparticuz/chromium-min on production (Vercel) — binary is fetched at
+ * runtime from GitHub releases to stay under Vercel's 50MB function size limit.
+ * Uses the local Chrome install in development.
  */
 export async function launchBrowser(): Promise<Browser> {
   const isDev = process.env.NODE_ENV === "development";
@@ -14,7 +20,7 @@ export async function launchBrowser(): Promise<Browser> {
     return await puppeteer.launch({
       headless: true,
       executablePath:
-        process.env.PUPPETEER_EXECUTABLE_PATH || // allow override via env
+        process.env.PUPPETEER_EXECUTABLE_PATH ||
         "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
       args: [
         "--no-sandbox",
@@ -25,8 +31,8 @@ export async function launchBrowser(): Promise<Browser> {
     });
   }
 
-  // Production (Vercel serverless): use @sparticuz/chromium bundled binary
-  const executablePath = await chromium.executablePath();
+  // Production (Vercel serverless): fetch binary from remote URL at runtime
+  const executablePath = await chromium.executablePath(CHROMIUM_REMOTE_URL);
 
   return await puppeteer.launch({
     args: chromium.args,
