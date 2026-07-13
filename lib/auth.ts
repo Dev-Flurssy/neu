@@ -47,52 +47,67 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }) {
       // For OAuth providers, upsert the user in the database manually
-      // (since we're not using the PrismaAdapter)
+      // (no PrismaAdapter — pure JWT strategy)
       if (account?.provider === "google" || account?.provider === "github") {
         if (!user.email) return false;
-        await prisma.user.upsert({
-          where: { email: user.email },
-          update: {
-            name: user.name ?? undefined,
-            image: user.image ?? undefined,
-          },
-          create: {
-            email: user.email,
-            name: user.name ?? null,
-            image: user.image ?? null,
-            role: "user",
-          },
-        });
+        try {
+          await prisma.user.upsert({
+            where: { email: user.email },
+            update: {
+              name: user.name ?? undefined,
+              image: user.image ?? undefined,
+            },
+            create: {
+              email: user.email,
+              name: user.name ?? null,
+              image: user.image ?? null,
+              role: "user",
+            },
+          });
+        } catch (err) {
+          console.error("[signIn] upsert failed:", err);
+          return false;
+        }
       }
       return true;
     },
 
     async jwt({ token, user, trigger }) {
-      // Attach user ID and role on first login (credentials) or after OAuth upsert
+      // On first sign-in, user object is present — fetch DB record by email
       if (user) {
-        // For credentials, user.id is set by the authorize function
-        // For OAuth, look up by email since user.id may not match DB
-        const dbUser = user.email
-          ? await prisma.user.findUnique({
+        try {
+          if (user.email) {
+            const dbUser = await prisma.user.findUnique({
               where: { email: user.email },
               select: { id: true, role: true },
-            })
-          : await prisma.user.findUnique({
-              where: { id: user.id },
-              select: { id: true, role: true },
             });
-        token.sub = dbUser?.id ?? user.id;
-        token.role = dbUser?.role ?? "user";
+            if (dbUser) {
+              token.sub = dbUser.id;
+              token.role = dbUser.role;
+            } else {
+              token.role = "user";
+            }
+          } else {
+            token.role = "user";
+          }
+        } catch (err) {
+          console.error("[jwt] findUnique failed:", err);
+          token.role = "user";
+        }
       }
 
-      // Only refresh role from database when explicitly triggered (not on every request)
+      // Refresh role only when explicitly triggered (e.g. after role change)
       else if (token.sub && trigger === "update") {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.sub },
-          select: { role: true },
-        });
-        if (dbUser) {
-          token.role = dbUser.role;
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.sub },
+            select: { role: true },
+          });
+          if (dbUser) {
+            token.role = dbUser.role;
+          }
+        } catch (err) {
+          console.error("[jwt] role refresh failed:", err);
         }
       }
 
