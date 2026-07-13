@@ -1,23 +1,42 @@
 import puppeteer, { Browser, Page } from "puppeteer-core";
 import chromium from "@sparticuz/chromium-min";
 
-// Remote chromium binary for Vercel — chromium-min downloads this at runtime
-// so the binary is NOT bundled into the function (avoids 50MB limit).
-// v123 is the last version compatible with Vercel's Amazon Linux 2 runtime (libnss3 constraint).
-const CHROMIUM_REMOTE_URL =
-  "https://github.com/Sparticuz/chromium/releases/download/v123.0.1/chromium-v123.0.1-pack.tar";
+// Serve the chromium binary from our own domain (bundled at build time via scripts/bundle-chromium.mjs)
+// This avoids GitHub rate limits and ensures the binary matches Vercel's runtime environment.
+const CHROMIUM_PACK_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}/chromium-pack.tar`
+  : "https://neu-dawt.vercel.app/chromium-pack.tar";
+
+// Cache executable path across warm invocations to avoid re-downloading
+let cachedExecutablePath: string | null = null;
+let downloadPromise: Promise<string> | null = null;
+
+async function getChromiumPath(): Promise<string> {
+  if (cachedExecutablePath) return cachedExecutablePath;
+  if (!downloadPromise) {
+    downloadPromise = chromium
+      .executablePath(CHROMIUM_PACK_URL)
+      .then((path) => {
+        cachedExecutablePath = path;
+        return path;
+      })
+      .catch((err) => {
+        downloadPromise = null; // allow retry
+        throw err;
+      });
+  }
+  return downloadPromise;
+}
 
 /**
- * Launch Puppeteer browser with standard configuration.
- * Uses @sparticuz/chromium-min on production (Vercel) — binary is fetched at
- * runtime from GitHub releases to stay under Vercel's 50MB function size limit.
- * Uses the local Chrome install in development.
+ * Launch Puppeteer browser.
+ * - Development: uses local Chrome install
+ * - Production (Vercel): uses chromium binary bundled at build time, served from our domain
  */
 export async function launchBrowser(): Promise<Browser> {
   const isDev = process.env.NODE_ENV === "development";
 
   if (isDev) {
-    // In development, use the locally installed Chrome
     return await puppeteer.launch({
       headless: true,
       executablePath:
@@ -32,8 +51,7 @@ export async function launchBrowser(): Promise<Browser> {
     });
   }
 
-  // Production (Vercel serverless): fetch binary from remote URL at runtime
-  const executablePath = await chromium.executablePath(CHROMIUM_REMOTE_URL);
+  const executablePath = await getChromiumPath();
 
   return await puppeteer.launch({
     args: chromium.args,
@@ -58,13 +76,12 @@ export async function waitForImages(page: Page, timeout: number = 60000): Promis
             }))
         );
       }),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Image loading timeout')), timeout)
-      )
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Image loading timeout")), timeout)
+      ),
     ]);
   } catch (err) {
-    console.warn('Image loading timeout or error:', err);
-    // Continue anyway - some images might have loaded
+    console.warn("Image loading timeout or error:", err);
   }
 }
 
