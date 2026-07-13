@@ -1,3 +1,8 @@
 {
-  "regions": ["iad1"]
+  "regions": ["iad1"],
+  "functions": {
+    "app/api/auth/[...nextauth]/route.ts": {
+      "maxDuration": 30
+    }
+  }
 }
