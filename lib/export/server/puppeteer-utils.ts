@@ -3,8 +3,9 @@ import chromium from "@sparticuz/chromium-min";
 
 // Remote chromium binary for Vercel — chromium-min downloads this at runtime
 // so the binary is NOT bundled into the function (avoids 50MB limit).
+// v123 is the last version compatible with Vercel's Amazon Linux 2 runtime (libnss3 constraint).
 const CHROMIUM_REMOTE_URL =
-  "https://github.com/Sparticuz/chromium/releases/download/v131.0.0/chromium-v131.0.0-pack.tar";
+  "https://github.com/Sparticuz/chromium/releases/download/v123.0.1/chromium-v123.0.1-pack.tar";
 
 /**
  * Launch Puppeteer browser with standard configuration.
