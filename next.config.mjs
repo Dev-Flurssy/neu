@@ -4,7 +4,7 @@ const nextConfig = {
     "@prisma/client",
     "prisma",
     "puppeteer-core",
-    "@sparticuz/chromium",
+    "@sparticuz/chromium-min",
   ],
 };
 
