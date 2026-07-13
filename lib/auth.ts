@@ -2,12 +2,12 @@ import { type NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import GitHubProvider from "next-auth/providers/github";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import { authorizeCredentials } from "@/lib/credentials";
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  // No adapter — using pure JWT strategy to avoid NextAuth v4 JWT+adapter session conflict
+  // User upsert is handled manually in the signIn callback
 
   session: {
     strategy: "jwt",
@@ -46,25 +46,46 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async signIn({ user, account }) {
-      // All users (OAuth and credentials) can sign in freely
-      // Email verification is not required
+      // For OAuth providers, upsert the user in the database manually
+      // (since we're not using the PrismaAdapter)
+      if (account?.provider === "google" || account?.provider === "github") {
+        if (!user.email) return false;
+        await prisma.user.upsert({
+          where: { email: user.email },
+          update: {
+            name: user.name ?? undefined,
+            image: user.image ?? undefined,
+          },
+          create: {
+            email: user.email,
+            name: user.name ?? null,
+            image: user.image ?? null,
+            role: "user",
+          },
+        });
+      }
       return true;
     },
 
     async jwt({ token, user, trigger }) {
-      // Attach user ID and role on first login
+      // Attach user ID and role on first login (credentials) or after OAuth upsert
       if (user) {
-        token.sub = user.id;
-        // Fetch role from database
-        const dbUser = await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { role: true },
-        });
-        token.role = dbUser?.role || 'user';
+        // For credentials, user.id is set by the authorize function
+        // For OAuth, look up by email since user.id may not match DB
+        const dbUser = user.email
+          ? await prisma.user.findUnique({
+              where: { email: user.email },
+              select: { id: true, role: true },
+            })
+          : await prisma.user.findUnique({
+              where: { id: user.id },
+              select: { id: true, role: true },
+            });
+        token.sub = dbUser?.id ?? user.id;
+        token.role = dbUser?.role ?? "user";
       }
-      
+
       // Only refresh role from database when explicitly triggered (not on every request)
-      // This improves performance significantly
       else if (token.sub && trigger === "update") {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.sub },
@@ -74,7 +95,7 @@ export const authOptions: NextAuthOptions = {
           token.role = dbUser.role;
         }
       }
-      
+
       return token;
     },
 
